@@ -1,0 +1,472 @@
+CHECKSUM: {}
+ENUM: {}
+FORMAT:
+    aux_bus_t:
+        FIELDS:
+            drop_vector:
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+    ccbe_t:
+        FIELDS:
+            dst_port:
+                MAXBIT: 6
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 7
+    ccbi_t:
+        FIELDS:
+            l2_pbm:
+                MAXBIT: 127
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 128
+            l3_pbm:
+                MAXBIT: 255
+                MINBIT: 128
+                ORDER: 1
+                WIDTH: 128
+    control_id_t:
+        FIELDS:
+            otpid_enable:
+                MAXBIT: 3
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 4
+            ts_enable:
+                MAXBIT: 4
+                MINBIT: 4
+                ORDER: 1
+                WIDTH: 1
+    egr_obj_bus_t:
+        FIELDS:
+            dst_modid:
+                MAXBIT: 7
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 8
+            dst_port:
+                MAXBIT: 14
+                MINBIT: 8
+                ORDER: 1
+                WIDTH: 7
+            ing_port:
+                MAXBIT: 21
+                MINBIT: 15
+                ORDER: 2
+                WIDTH: 7
+            ingress_timestamp:
+                MAXBIT: 37
+                MINBIT: 22
+                ORDER: 3
+                WIDTH: 16
+    local_bus_t:
+        FIELDS:
+            cos:
+                MAXBIT: 11
+                MINBIT: 9
+                ORDER: 2
+                WIDTH: 3
+            cos_strength:
+                MAXBIT: 15
+                MINBIT: 12
+                ORDER: 3
+                WIDTH: 4
+            dscp:
+                MAXBIT: 8
+                MINBIT: 3
+                ORDER: 1
+                WIDTH: 6
+            vlan_pri:
+                MAXBIT: 2
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 3
+    obj_bus_t:
+        FIELDS:
+            dst_modid:
+                MAXBIT: 16
+                MINBIT: 9
+                ORDER: 2
+                WIDTH: 8
+            dst_port:
+                MAXBIT: 23
+                MINBIT: 17
+                ORDER: 3
+                WIDTH: 7
+            port_num:
+                MAXBIT: 8
+                MINBIT: 2
+                ORDER: 1
+                WIDTH: 7
+            port_type_cfg:
+                MAXBIT: 1
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 2
+    time_bus_t:
+        FIELDS:
+            currenttime:
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+INSTANCE:
+    BUS:
+        ccbe: ccbe_t
+        ccbi: ccbi_t
+        control_id: control_id_t
+        egr_aux_bus: aux_bus_t
+        egr_obj_bus: egr_obj_bus_t
+        local_bus: local_bus_t
+        obj_bus: obj_bus_t
+        time_bus: time_bus_t
+    PACKET:
+        ingress_pkt: ing_pkt_t
+REGISTER: {}
+TABLE:
+    cos_strength_profile_table:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 43
+                MINBIT: 12
+                ORDER: 5
+                TAG: metadata
+                WIDTH: 32
+            _HIT_INDEX1:
+                MAXBIT: 76
+                MINBIT: 45
+                ORDER: 7
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 3
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 3
+            _LOOKUP0:
+                MAXBIT: 11
+                MINBIT: 11
+                ORDER: 4
+                TAG: metadata
+                WIDTH: 1
+            _LOOKUP1:
+                MAXBIT: 44
+                MINBIT: 44
+                ORDER: 6
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            cos_strength:
+                MAXBIT: 10
+                MINBIT: 7
+                ORDER: 3
+                TAG: data
+                WIDTH: 4
+            cos_strength_profile_table_index:
+                MAXBIT: 6
+                MINBIT: 4
+                ORDER: 2
+                TAG: key
+                WIDTH: 3
+        MAX_SIZE: 8
+        MEM_TYPE: table
+        MIN_SIZE: 8
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+    dscp_cos_mapping_table:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 51
+                MINBIT: 20
+                ORDER: 6
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 6
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 6
+            _LOOKUP0:
+                MAXBIT: 19
+                MINBIT: 19
+                ORDER: 5
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            cos:
+                MAXBIT: 18
+                MINBIT: 16
+                ORDER: 4
+                TAG: data
+                WIDTH: 3
+            cos_strength_index:
+                MAXBIT: 15
+                MINBIT: 13
+                ORDER: 3
+                TAG: data
+                WIDTH: 3
+            dscp:
+                MAXBIT: 12
+                MINBIT: 7
+                NPL_BASE_FIELD: 'dscp'
+                ORDER: 2
+                TAG: key
+                WIDTH: 6
+        MAX_SIZE: 64
+        MEM_TYPE: table
+        MIN_SIZE: 64
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+    pri_cos_mapping_table:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 45
+                MINBIT: 14
+                ORDER: 6
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 3
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 3
+            _LOOKUP0:
+                MAXBIT: 13
+                MINBIT: 13
+                ORDER: 5
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            cos:
+                MAXBIT: 12
+                MINBIT: 10
+                ORDER: 4
+                TAG: data
+                WIDTH: 3
+            cos_strength_index:
+                MAXBIT: 9
+                MINBIT: 7
+                ORDER: 3
+                TAG: data
+                WIDTH: 3
+            vlan_pri:
+                MAXBIT: 6
+                MINBIT: 4
+                NPL_BASE_FIELD: 'vlan_pri'
+                ORDER: 2
+                TAG: key
+                WIDTH: 3
+        MAX_SIZE: 8
+        MEM_TYPE: table
+        MIN_SIZE: 8
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+    sfc_edb_profile:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 227
+                MINBIT: 196
+                ORDER: 7
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 1
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 1
+            _LOOKUP0:
+                MAXBIT: 195
+                MINBIT: 195
+                ORDER: 6
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            edb_index:
+                MAXBIT: 2
+                MINBIT: 2
+                ORDER: 2
+                TAG: key
+                WIDTH: 1
+            in_drop_vector:
+                BUS_SELECT_WIDTH: 16
+                MAXBIT: 66
+                MINBIT: 3
+                ORDER: 3
+                TAG: bus_select
+                WIDTH: 64
+            in_dst_mod:
+                BUS_SELECT_WIDTH: 8
+                MAXBIT: 130
+                MINBIT: 67
+                ORDER: 4
+                TAG: bus_select
+                WIDTH: 64
+            in_dst_port:
+                BUS_SELECT_WIDTH: 7
+                MAXBIT: 194
+                MINBIT: 131
+                ORDER: 5
+                TAG: bus_select
+                WIDTH: 64
+        MAX_SIZE: 2
+        MEM_TYPE: table
+        MIN_SIZE: 2
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+    sfc_iarb_profile:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 355
+                MINBIT: 324
+                ORDER: 9
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 1
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 1
+            _LOOKUP0:
+                MAXBIT: 323
+                MINBIT: 323
+                ORDER: 8
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            iarb_index:
+                MAXBIT: 2
+                MINBIT: 2
+                ORDER: 2
+                TAG: key
+                WIDTH: 1
+            out_currenttime:
+                BUS_SELECT_WIDTH: 16
+                MAXBIT: 322
+                MINBIT: 259
+                ORDER: 7
+                TAG: bus_select
+                WIDTH: 64
+            out_otpid_enable:
+                BUS_SELECT_WIDTH: 4
+                MAXBIT: 66
+                MINBIT: 3
+                ORDER: 3
+                TAG: bus_select
+                WIDTH: 64
+            out_port_num:
+                BUS_SELECT_WIDTH: 7
+                MAXBIT: 194
+                MINBIT: 131
+                ORDER: 5
+                TAG: bus_select
+                WIDTH: 64
+            out_port_type_cfg:
+                BUS_SELECT_WIDTH: 2
+                MAXBIT: 258
+                MINBIT: 195
+                ORDER: 6
+                TAG: bus_select
+                WIDTH: 64
+            out_ts_enable:
+                BUS_SELECT_WIDTH: 1
+                MAXBIT: 130
+                MINBIT: 67
+                ORDER: 4
+                TAG: bus_select
+                WIDTH: 64
+        MAX_SIZE: 2
+        MEM_TYPE: table
+        MIN_SIZE: 2
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+    sfc_mmu_profile:
+        FIELDS:
+            _HIT_INDEX0:
+                MAXBIT: 227
+                MINBIT: 196
+                ORDER: 7
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                MAXBIT: 1
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 1
+            _LOOKUP0:
+                MAXBIT: 195
+                MINBIT: 195
+                ORDER: 6
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            in_l2_pbm:
+                BUS_SELECT_WIDTH: 128
+                MAXBIT: 66
+                MINBIT: 3
+                ORDER: 3
+                TAG: bus_select
+                WIDTH: 64
+            in_l3_pbm:
+                BUS_SELECT_WIDTH: 128
+                MAXBIT: 130
+                MINBIT: 67
+                ORDER: 4
+                TAG: bus_select
+                WIDTH: 64
+            mmu_index:
+                MAXBIT: 2
+                MINBIT: 2
+                ORDER: 2
+                TAG: key
+                WIDTH: 1
+            out_dst_port:
+                BUS_SELECT_WIDTH: 7
+                MAXBIT: 194
+                MINBIT: 131
+                ORDER: 5
+                TAG: bus_select
+                WIDTH: 64
+        MAX_SIZE: 2
+        MEM_TYPE: table
+        MIN_SIZE: 2
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+UPDATE_PACKET_LENGTH: {}

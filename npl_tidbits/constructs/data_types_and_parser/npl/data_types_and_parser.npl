@@ -1,0 +1,284 @@
+/*
+*********************************************************************************
+** Purpose: illustrate the data types and parser in NPL.
+**
+** Description:
+**   This program defines a packet header using NPL supported data types and 
+**   displays the content of the packet.
+**
+** Topology diagram:
+**
+**                 +------------------+
+**                 |                  |
+**    ingress_port |                  |egress_port
+**      +----------+                  +-----------+
+**                 |                  |
+**                 |                  |
+**                 +------------------+
+**
+** Notes: 
+** Verification method: 
+**   Send the below 4 types of packets and verify that the parser correctly parses
+**   the packet by checking _PRESENT metadata.
+**   1)Double-tagged packet
+**   2)single-outer-tagged packet
+**   3)single-inner-tagged packet
+**   4)un-tagged packet
+**
+*********************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/*
+* NPL has two base data types, bit and varbit.
+* The bit type is used to describe fields in more complex data types such as 
+* struct, logical_table, logical_register, or bus. 
+* A bit stores value 0 or 1.
+* Multi-bit variables can be represented using bit-arrays and array width
+* represents the number of bits in the multi-bit variable.
+* The below structures defines a packet format using bit, bit-array and
+* varbit data types.
+*/
+
+/*
+* The below structure defines L2 header with below three fields.
+* macda which is 48 bits wide.
+* macsa which is 48 bits wide.
+* ethertype which is 16 bits wide.
+*/
+struct l2_t {
+    fields {
+        bit[48]     macda; /*48 bit width array for destination mac address*/
+        bit[48]     macsa;
+        bit[16]     ethertype;
+    }
+}
+
+/*
+* The below structure defines VLAN header with below four fields.
+* pcp which is 3 bits wide.
+* cfi which is 1 bit wide.
+* vid which is 12 bits wide.
+* ethertype which is 16 bits wide.
+*/
+
+struct vlan_t {
+    fields {
+        bit[3]      pcp;
+        bit         cfi;
+        bit[12]     vid;
+        bit[16]     ethertype;
+    }
+}
+
+/*
+* A struct is also used to package the headers into a header group level struct.
+* Header groups are required to define a packet in the NPL.
+* Header group level structs are packed to specify a packet.
+* A header group level struct must only instantiate structs used to declare header types.
+* bit/bit[] are not allowed. Arrays of header groups are not allowed.
+* The below structure defines a header group level struct with below headers.
+* header l2 of type l2_t
+* header outer_tag of type vlan_t
+* header inner_tag of type vlan_t
+*/
+struct l2_hdr_grp_t {
+    fields {
+        l2_t         l2;
+        vlan_t       outer_tag;
+        vlan_t       inner_tag;
+    }
+}
+
+/*
+* The below structure definition shows how to define variable length header.
+* Variable length field is specified using "varbit".
+* varbit[num] - num specifies the maximum allowed width for the field.
+* Each Variable length header must have a header_length_exp attribute.
+* A struct with multiple variable length fields is not supported.
+* In this example, option is the variable length field.
+* "header_length_exp" specifies how to compute length of the header.
+* Arithmetic operators allowed are (+,*)
+*/
+
+struct ipv4_t {
+    fields {
+        bit[4]      version;
+        bit[4]      hdr_len;
+        bit[8]      tos;
+        bit[16]     v4_length;
+        bit[16]     id;
+        bit[3]      flags;
+        bit[13]     frag_offset;
+        bit[8]      ttl;
+        bit[8]      protocol;
+        bit[16]     hdr_checksum;
+        bit[32]     sip;
+        bit[32]     dip;
+        varbit[512] option;
+    }
+    header_length_exp  : hdr_len*4;
+}
+
+struct l3_hdr_grp_t {
+    fields {
+        ipv4_t         ipv4;
+    }
+}
+
+/*
+* A packet level struct is used to aggregate multiple headers or header
+* groups into a packet. The header groups must follow the order in which
+* the groups appear across all packets. 
+* The below structure defines a another header group level struct with below headers.
+* header l2_hdr of type l2_hdr_grp_t
+* header l3_hdr of type l3_hdr_grp_t
+*/
+struct ingress_pkt_t {
+    fields {
+        l2_hdr_grp_t l2_hdr;
+        l3_hdr_grp_t l3_hdr;
+    }
+}
+
+/*
+* Packet instances are declared using the keyword packet
+*/
+packet ingress_pkt_t ingress_pkt;
+
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+parser_node ethernet {
+  /*Specify which header instance to extract here.
+  * All fields of a specified header instance are extracted here.
+  * macda, macsa and ethertype are extracted here.
+  * Packet parsing pointer also moves after extract_fields.
+  */
+  extract_fields(ingress_pkt.l2_hdr.l2);
+  switch(latest.ethertype) {
+    0x88A8:
+      next_node otag;
+
+    0x8100:  
+      next_node itag;
+
+    0x0800:
+      next_node ipv4;
+
+    default :
+      next_node ingress;
+  }
+}
+
+parser_node otag {
+  extract_fields(ingress_pkt.l2_hdr.outer_tag);
+  switch(latest.ethertype) {
+     0x8100:
+      next_node itag;
+
+    0x0800 :
+      next_node ipv4;
+
+    default :
+      next_node ingress;
+  }
+}
+
+parser_node itag {
+  extract_fields(ingress_pkt.l2_hdr.inner_tag);
+  /*
+  * Supports if/else/else if to specify the equations
+  * to reach to the next node. 
+  * Braces must be used, even for a single statement.
+  */
+  if (latest.ethertype == 0x0800) {
+      next_node ipv4;
+  } else {
+    next_node ingress;
+  }
+}
+
+parser_node ipv4 {
+    extract_fields(ingress_pkt.l3_hdr.ipv4);
+    next_node ingress;
+}
+
+parser_node ingress {
+    /*Specify that this is the last node of this tree.*/
+    end_node : 1; 
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program data_types_and_parser {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /*
+    * Invoking the parser tree defined above.
+    * Parsing of the packet starts from parser_node "start"
+    */
+    parse_begin(start);
+
+    print("Src Mac: 0x%x\n", ingress_pkt.l2_hdr.l2.macsa);
+    print("Dst Mac: 0x%x\n", ingress_pkt.l2_hdr.l2.macda);
+
+    /*
+    *  Each header has a 1 bit "_PRESENT" dynamic metadata field associated
+    *  with it. The _PRESENT bit indicates whether a particular header instance
+    *  reference is valid in the current packet. "_PRESENT" field of each header is
+    *  populated during parsing based on the current packet fields.
+    */
+
+    if (ingress_pkt.l2_hdr.outer_tag._PRESENT && ingress_pkt.l2_hdr.inner_tag._PRESENT) {
+      print("Packet is double tagged\n");
+      print("Outer VlanId is %d\n",ingress_pkt.l2_hdr.outer_tag.vid);
+      print("Inner VlanId is %d\n",ingress_pkt.l2_hdr.inner_tag.vid);
+    }
+
+    if (ingress_pkt.l2_hdr.outer_tag._PRESENT && !ingress_pkt.l2_hdr.inner_tag._PRESENT) {
+      print("Packet is single outer tagged\n");
+      print("Outer VlanId is %d\n",ingress_pkt.l2_hdr.outer_tag.vid);
+    }
+
+    if (!ingress_pkt.l2_hdr.outer_tag._PRESENT && ingress_pkt.l2_hdr.inner_tag._PRESENT) {
+      print("Packet is single inner tagged\n");
+      print("Inner VlanId is %d\n",ingress_pkt.l2_hdr.inner_tag.vid);
+    }
+
+    if (!ingress_pkt.l2_hdr.outer_tag._PRESENT && !ingress_pkt.l2_hdr.inner_tag._PRESENT) {
+      print("Packet is un-tagged\n");
+    }
+
+    if (ingress_pkt.l3_hdr.ipv4._PRESENT) {
+
+      print("Source ip address is 0X%x\n", ingress_pkt.l3_hdr.ipv4.sip);
+
+      print("Destination ip address is 0X%x\n", ingress_pkt.l3_hdr.ipv4.dip);
+      if (ingress_pkt.l3_hdr.ipv4.option != 0) {
+        print("This is a packet with IP options\n");
+      }
+    }
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+    base_egress();
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

@@ -1,0 +1,264 @@
+# 1 "npl/logical_tbl.npl"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 1 "<command-line>" 2
+# 1 "npl/logical_tbl.npl"
+# 37 "npl/logical_tbl.npl"
+# 1 "npl/base_helper.npl" 1
+# 39 "npl/base_helper.npl"
+struct l2_t {
+    fields {
+        bit[48] macda;
+        bit[48] macsa;
+        bit[16] ethertype;
+    }
+}
+struct vlan_t {
+    fields {
+        bit[3] pcp;
+        bit[1] cfi;
+        bit[12] vid;
+        bit[16] ethertype;
+    }
+}
+struct grp_t {
+    fields {
+        l2_t l2;
+        vlan_t vlan_tag;
+    }
+}
+struct pkt_t {
+    fields {
+        grp_t grp;
+    }
+}
+packet pkt_t pkt;
+
+
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+parser_node ethernet {
+    extract_fields(pkt.grp.l2);
+    switch(latest.ethertype) {
+      0x8100: next_node vlan_tag;
+      default: next_node ingress;
+    }
+}
+parser_node vlan_tag {
+    extract_fields(pkt.grp.vlan_tag);
+    next_node ingress;
+}
+parser_node ingress {
+    end_node : 1;
+
+}
+
+struct obj_bus_t {
+    fields {
+        bit[2] port_type_cfg;
+        bit[7] port_num;
+        bit[8] dst_modid;
+        bit[7] dst_port;
+        bit[12] vid;
+        bit[128] vlan_membership_bitmap;
+        bit[16] drop_vector;
+    }
+}
+
+
+struct ccbi_t {
+    fields {
+        bit[128] l2_pbm;
+        bit[128] l3_pbm;
+    }
+}
+
+struct ccbe_t {
+    fields {
+        bit[7] dst_port;
+    }
+}
+
+struct control_id_t {
+    fields {
+        bit[4] otpid_enable;
+        bit ts_enable;
+    }
+}
+
+struct time_bus_t {
+    fields {
+        bit[16] currenttime;
+    }
+}
+
+struct egr_obj_bus_t {
+    fields {
+        bit[8] dst_modid;
+        bit[7] dst_port;
+        bit[7] ing_port;
+        bit[16] ingress_timestamp;
+    }
+}
+
+struct aux_bus_t {
+    fields {
+        bit [16] drop_vector;
+    }
+}
+
+bus obj_bus_t obj_bus;
+bus ccbi_t ccbi;
+bus ccbe_t ccbe;
+bus control_id_t control_id;
+bus time_bus_t time_bus;
+bus egr_obj_bus_t egr_obj_bus;
+bus aux_bus_t egr_aux_bus;
+
+
+
+special_function iarb {
+
+    usage_mode_create(in const eindex,
+               out bit[4] otpid_enable,
+               out bit[1] ts_enable,
+               out bit[7] port_num,
+               out bit[2] port_type_cfg,
+               out bit[16] currenttime
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+special_function mmu {
+
+    usage_mode_create(in const eindex,
+               in bit[128] l2_pbm,
+               in bit[128] l3_pbm,
+               out bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+
+special_function edb {
+
+    usage_mode_create(in const eindex,
+               in bit[16] drop_vector,
+               in bit[8] dst_mod,
+               in bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+function base_egress() {
+    egr_aux_bus.drop_vector = obj_bus.drop_vector;
+    egr_obj_bus.dst_modid = obj_bus.dst_modid;
+    egr_obj_bus.dst_port = ccbe.dst_port;
+}
+# 38 "npl/logical_tbl.npl" 2
+
+
+
+
+
+
+
+logical_table vlan_table {
+
+  table_type : index;
+  minsize : 4096;
+  maxsize : 4096;
+
+  keys {
+      bit[12] vid;
+  }
+
+  fields {
+      bit[128] vlan_membership_bitmap;
+  }
+
+  key_construct() {
+      vid = obj_bus.vid;
+  }
+
+  fields_assign(){
+      if (_LOOKUP0 == 1) {
+          obj_bus.vlan_membership_bitmap = vlan_membership_bitmap;
+      }
+  }
+}
+
+
+
+function vlan_assign() {
+  if(pkt.grp.vlan_tag._PRESENT)
+  {
+     print("VLAN TAG present in incoming packet. VLAN:%d\n", pkt.grp.vlan_tag.vid);
+     obj_bus.vid = pkt.grp.vlan_tag.vid;
+  }
+  else
+  {
+     print("VLAN TAG not present in incoming packet.\n");
+     obj_bus.vid = 1;
+  }
+}
+
+
+function assign_destination() {
+  ccbi.l3_pbm = 0;
+  ccbi.l2_pbm = obj_bus.vlan_membership_bitmap;
+
+  if(obj_bus.vlan_membership_bitmap != 0) {
+
+    ccbi.l2_pbm = obj_bus.vlan_membership_bitmap & (~(1<<(obj_bus.port_num)));
+    obj_bus.drop_vector = 0;
+  }
+  else {
+
+    obj_bus.drop_vector = 1;
+  }
+
+  obj_bus.dst_modid = 0;
+}
+
+
+
+
+program logical_tbl {
+
+
+
+  iarb.usage_mode_create( 0, control_id.otpid_enable, control_id.ts_enable, obj_bus.port_num, obj_bus.port_type_cfg, time_bus.currenttime ); iarb.execute();
+
+
+
+
+  parse_begin(start);
+
+
+  vlan_assign();
+  vlan_table.lookup(0);
+
+
+  assign_destination();
+
+
+  mmu.usage_mode_create( 0, ccbi.l2_pbm, ccbi.l3_pbm, ccbe.dst_port ); mmu.execute();
+
+
+  base_egress();
+
+
+
+  edb.usage_mode_create( 0, egr_aux_bus.drop_vector, egr_obj_bus.dst_modid, egr_obj_bus.dst_port ); edb.execute();
+
+}

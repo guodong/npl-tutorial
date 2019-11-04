@@ -1,0 +1,105 @@
+
+/*
+*******************************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox for experimenting with 'packet trace' construct
+**
+** Description:
+**   'Packet trace' construct is used to trace a packet (copy to cpu)
+**   In this example, packets with IP_OPTION are traced by calling packet_trace() construct.
+**    
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+**   1.packet_drop()/packet_trace()/packet_count() construct is not allowed to be called in the 
+**     main program, but can be called in a function construct.
+**   2.There is no effect by calling packet_trace() in current BM implementation.
+**
+** Verification method:
+**   a. Send a normal packet w/o ip options from port-0 to BM
+**      Receive a packet from port-1
+**   b. Send a packet with ip options from port-0 to BM
+**      BM window prints out packet_trace() construct is calling.
+**      Receive a packet from port-1
+**
+*******************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/* Packet trace reason code */
+#define REASON_CODE__IP_OPTION 	0x00000001
+
+/*
+* Please refer to base_helper.npl for packet header definition and parsing
+*/
+
+/* 
+* Local variables defined as a bus construct
+*/
+struct local_bus_t {
+    fields {
+        bit		ipv4_with_option;
+    }
+}
+
+bus local_bus_t local_bus;
+
+
+/* -----------------------------------
+* Function construct
+*   Trace packets with IP options
+* ----------------------------------- */ 
+function do_ip_option_check(){
+
+    if (ingress_pkt.group.ipv4._PRESENT) {
+
+        /* header length > 5 means ip_option exist*/
+        if (ingress_pkt.group.ipv4.hdr_len > 5) {
+            local_bus.ipv4_with_option = 1;
+            print ("Calling packet_trace().\n");
+            packet_trace (local_bus.ipv4_with_option, REASON_CODE__IP_OPTION);
+        }
+    }
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program pkt_trace {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    /* Note: packet_drop/ packet_count / packet_trace cannot be called in the main program */
+    // Calling a function to perform ip_option check
+    do_ip_option_check();
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

@@ -1,0 +1,206 @@
+
+#define PORT_NUM_WIDTH    7
+#define MGID_WIDTH        11
+#define PORT_BITMAP_WIDTH 32
+
+#define MEMBERSHIP_SPG_FAILED 0:0
+#define UNKNOWN_PKT           1:1
+#define CHECKSUM_FAILURE      2:2
+#define L3_LOOKUP_DISCARD     3:3
+#define MAC_ADDR_BCAST        0xffffffffffff 
+
+struct local_t {
+    fields {
+        bit      no_l3_switch;
+        bit[128] in_port_bitmap;
+        bit[128] temp_port_bitmap;
+        bit[8]   int_ins_count;
+    }
+}
+
+struct control_id_t {
+    fields {
+        bit[4]  otpid_enable;
+        bit     ts_enable;
+    }
+}
+
+struct cmd_bus_t {
+    fields {
+        bit     port_l3_enable;
+        bit     vlan_l3_enable;
+        bit     otag_enable;
+        bit     my_stn_routing_enable;
+        bit     l3_dst_rpe;
+        bit     mc_pkt;
+        bit[4]  l3_host_hit_results;
+        bit[4]  ip_sip_results;
+        bit[4]  ip_dip_results;
+        bit     l3_routable;
+        bit[2]  l3_discard;
+        bit     change_pri;
+        bit[2]  stg_state;
+        bit     do_ecmp;
+        bit     do_l2_lookup;
+        bit     do_l3_lookup;
+        bit     pkt_l2_da_mcast;
+        bit     pkt_l2_da_bcast;
+        bit     pkt_dot1p;
+        bit     ipv4_tunnel_table_hit;
+        bit     ipv6_tunnel_table_hit;
+        bit     use_outer_ttl;
+        bit     do_int_process;
+    }
+
+    overlays {
+        ip_sip_zero     : ip_sip_results[0:0];
+        ip_sip_loopback : ip_sip_results[1:1];
+        ip_sip_classd   : ip_sip_results[2:2];
+        ip_sip_bc       : ip_sip_results[3:3];
+        ip_dip_zero     : ip_dip_results[0:0];
+        ip_dip_loopback : ip_dip_results[1:1];
+        ip_dip_classd   : ip_dip_results[2:2];
+        ip_dip_bc       : ip_dip_results[3:3];
+        l3_src_discard  : l3_discard[0:0];
+        l3_dst_discard  : l3_discard[1:1];
+        src_private_hit : l3_host_hit_results[0:0];
+        dst_private_hit : l3_host_hit_results[1:1];
+        src_public_hit  : l3_host_hit_results[2:2];
+        dst_public_hit  : l3_host_hit_results[3:3];
+    }
+}
+
+struct obj_bus_t {
+    fields {
+        bit[PORT_BITMAP_WIDTH]  l2mc_bitmap;
+        bit[12]                 local_address;
+        bit[2]                  port_type_cfg;
+        bit[PORT_NUM_WIDTH]     port_num;
+        bit[12]                 vrf;
+        bit[12]                 nhi_index;
+        bit[8]                  nhi_dst_modid;
+        bit[PORT_NUM_WIDTH]     nhi_dst_port;
+        bit[8]                  dst_modid;
+        bit[PORT_NUM_WIDTH]     dst_port;
+        bit[3]                  new_pri;
+        bit[3]                  l3_dst_pri;
+        bit[8]                  src_modid;
+        bit[128]                vlan_membership_bitmap;
+        bit[5]                  stg_ptr;
+        bit[12]                 port_vid;
+        bit[12]                 vid;
+        bit[6]                  ecmp_group_index;
+        bit[32]                 rtag7_hash;
+        bit[MGID_WIDTH]         mgid;
+        bit[128]                ip_da;
+        bit[128]                ip_sa;
+    }
+}
+
+struct aux_bus_t {
+    fields {
+        bit [16]     drop_vector;
+    }
+}
+
+struct mpb_bus_t {
+    fields {
+        bit[3]              new_pri;
+        bit                 l3_routable;
+        bit                 change_pri;
+        bit[12]             nhi_index;
+        bit[8]              dst_modid;
+        bit[PORT_NUM_WIDTH] dst_port;
+        bit                 drop_pkt;
+    }
+}
+
+struct egr_cmd_bus_t {
+    fields {
+        bit     l3_routable;
+        bit     change_pri;
+        bit     update_vid;
+        bit     dec_ttl;
+        bit     use_outer_ttl;
+        bit     decap_tunnel;
+        bit     encap_tunnel;
+        bit     do_int_transit;
+        bit     encap_tunnel_type;
+    }
+}
+
+struct egr_obj_bus_t {
+    fields {
+        bit[3]              new_pri;
+        bit[12]             l3_intf_num;
+        bit[12]             nhi_index;
+        bit[8]              dst_modid;
+        bit[PORT_NUM_WIDTH] dst_port;
+        bit[48]             dst_mac_addr;
+        bit[48]             src_mac_addr;
+        bit[128]            src_ip_addr;
+        bit[128]            dst_ip_addr;
+        bit[8]              protocol;
+        bit[8]              ip_tunnel_table_index;
+        bit[8]              ttl;
+        bit[8]              new_ttl;
+        bit[12]             nhi_vid;
+        bit[PORT_NUM_WIDTH] ing_port;
+        bit[16]             ingress_timestamp;
+    }
+}
+
+struct egr_field_bus_t {
+    fields {
+        bit[48] macda;
+        bit[48] macsa;
+    }
+}
+
+struct time_bus_t {
+    fields {
+        bit[16] currenttime;
+    }
+}
+
+struct ipv4_host_table_key_t {
+    fields {
+        bit[32]  da;
+    }
+}
+
+struct ipv6_host_table_key_t {
+    fields {
+        bit[128]  da;
+    }
+}
+
+struct ccbi_t {
+    fields {
+        bit[128] l2_pbm;
+        bit[128] l3_pbm;
+    }
+}
+
+struct ccbe_t {
+    fields {
+        bit[PORT_NUM_WIDTH] dst_port;
+    }
+}
+
+bus local_t               local;
+bus control_id_t          control_id;
+bus obj_bus_t             obj_bus;
+bus cmd_bus_t             cmd_bus;
+bus aux_bus_t             aux_bus;
+bus aux_bus_t             egr_aux_bus;
+bus egr_cmd_bus_t         egr_cmd_bus;
+bus egr_obj_bus_t         egr_obj_bus;
+bus mpb_bus_t             mpb_bus;
+bus egr_field_bus_t       egr_field_bus;
+bus time_bus_t            time_bus;
+bus ipv4_host_table_key_t ipv4_host_table_key;
+bus ipv6_host_table_key_t ipv6_host_table_key;
+bus ccbi_t                ccbi;
+bus ccbe_t                ccbe;
+

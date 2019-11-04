@@ -1,0 +1,220 @@
+$CHECKSUM = { 
+};
+
+$ENUM = { 
+};
+
+$FORMAT = {
+    aux_bus_t => {
+        DESC =>  '',
+        FIELDS => {
+            drop_vector => {
+                DESC =>  '',
+                MAXBIT => 15,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 16,
+            },
+        },
+    },
+    ccbe_t => {
+        DESC =>  '',
+        FIELDS => {
+            dst_port => {
+                DESC =>  '',
+                MAXBIT => 6,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 7,
+            },
+        },
+    },
+    ccbi_t => {
+        DESC =>  '',
+        FIELDS => {
+            l2_pbm => {
+                DESC =>  '',
+                MAXBIT => 127,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 128,
+            },
+            l3_pbm => {
+                DESC =>  '',
+                MAXBIT => 255,
+                MINBIT => 128,
+                ORDER => 1,
+                WIDTH => 128,
+            },
+        },
+    },
+    control_id_t => {
+        DESC =>  '',
+        FIELDS => {
+            otpid_enable => {
+                DESC =>  '',
+                MAXBIT => 3,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 4,
+            },
+            ts_enable => {
+                DESC =>  '',
+                MAXBIT => 4,
+                MINBIT => 4,
+                ORDER => 1,
+                WIDTH => 1,
+            },
+        },
+    },
+    egr_obj_bus_t => {
+        DESC =>  '',
+        FIELDS => {
+            dst_modid => {
+                DESC =>  '',
+                MAXBIT => 7,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 8,
+            },
+            dst_port => {
+                DESC =>  '',
+                MAXBIT => 14,
+                MINBIT => 8,
+                ORDER => 1,
+                WIDTH => 7,
+            },
+            ing_port => {
+                DESC =>  '',
+                MAXBIT => 21,
+                MINBIT => 15,
+                ORDER => 2,
+                WIDTH => 7,
+            },
+            ingress_timestamp => {
+                DESC =>  '',
+                MAXBIT => 37,
+                MINBIT => 22,
+                ORDER => 3,
+                WIDTH => 16,
+            },
+        },
+    },
+    local_bus_t => {
+        DESC =>  '',
+        FIELDS => {
+            hash_dip => {
+                DESC =>  '',
+                MAXBIT => 63,
+                MINBIT => 32,
+                ORDER => 1,
+                WIDTH => 32,
+            },
+            hash_dst_port => {
+                DESC =>  '',
+                MAXBIT => 103,
+                MINBIT => 88,
+                ORDER => 4,
+                WIDTH => 16,
+            },
+            hash_protocol => {
+                DESC =>  '',
+                MAXBIT => 71,
+                MINBIT => 64,
+                ORDER => 2,
+                WIDTH => 8,
+            },
+            hash_sip => {
+                DESC =>  '',
+                MAXBIT => 31,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 32,
+            },
+            hash_src_port => {
+                DESC =>  '',
+                MAXBIT => 87,
+                MINBIT => 72,
+                ORDER => 3,
+                WIDTH => 16,
+            },
+            hash_val => {
+                DESC =>  '',
+                MAXBIT => 111,
+                MINBIT => 104,
+                ORDER => 5,
+                WIDTH => 8,
+            },
+        },
+    },
+    obj_bus_t => {
+        DESC =>  '',
+        FIELDS => {
+            dst_modid => {
+                DESC =>  '',
+                MAXBIT => 16,
+                MINBIT => 9,
+                ORDER => 2,
+                WIDTH => 8,
+            },
+            dst_port => {
+                DESC =>  '',
+                MAXBIT => 23,
+                MINBIT => 17,
+                ORDER => 3,
+                WIDTH => 7,
+            },
+            port_num => {
+                DESC =>  '',
+                MAXBIT => 8,
+                MINBIT => 2,
+                ORDER => 1,
+                WIDTH => 7,
+            },
+            port_type_cfg => {
+                DESC =>  '',
+                MAXBIT => 1,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 2,
+            },
+        },
+    },
+    time_bus_t => {
+        DESC =>  '',
+        FIELDS => {
+            currenttime => {
+                DESC =>  '',
+                MAXBIT => 15,
+                MINBIT => 0,
+                ORDER => 0,
+                WIDTH => 16,
+            },
+        },
+    },
+};
+
+$INSTANCE = {
+    BUS => {
+        ccbe => ccbe_t,
+        ccbi => ccbi_t,
+        control_id => control_id_t,
+        egr_aux_bus => aux_bus_t,
+        egr_obj_bus => egr_obj_bus_t,
+        local_bus => local_bus_t,
+        obj_bus => obj_bus_t,
+        time_bus => time_bus_t,
+    },
+    PACKET => {
+        ingress_pkt => ing_pkt_t,
+    },
+};
+
+$REGISTER = { 
+};
+
+$TABLE = { 
+};
+
+$UPDATE_PACKET_LENGTH = { 
+};

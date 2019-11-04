@@ -1,0 +1,81 @@
+$HEADER = {
+    ethernet_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 112,
+                MINBIT => 112,
+                ORDER => 3,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            ether_type => {
+                DESC =>  '',
+                MAXBIT => 111,
+                MINBIT => 96,
+                ORDER => 2,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 16,
+            },
+            macda => {
+                DESC =>  '',
+                MAXBIT => 47,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+            macsa => {
+                DESC =>  '',
+                MAXBIT => 95,
+                MINBIT => 48,
+                ORDER => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+        },
+        TYPE => HEADER,
+    },
+    group_t => {
+        DESC =>  '',
+        FIELDS => {
+            ether => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => ethernet_t,
+                MAXBIT => 111,
+                MINBIT => 0,
+                ORDER => 0,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 112,
+            },
+        },
+        TYPE => GROUP,
+    },
+    ingress_pkt_t => {
+        DESC =>  '',
+        FIELDS => {
+            group => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => group_t,
+                MAXBIT => 111,
+                MINBIT => 0,
+                ORDER => 0,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 112,
+            },
+        },
+        TYPE => PACKET,
+    },
+};

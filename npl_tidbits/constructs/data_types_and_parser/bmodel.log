@@ -1,0 +1,153 @@
+sc_main() enter
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(112)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 88 a8 00 0a     ................
+0010:  81 00 00 14 08 00 45 00  00 5a 00 01 00 00 40 06     ......E..Z....@.
+0020:  74 98 02 02 02 02 01 01  01 01 00 14 00 50 00 00     t............P..
+0030:  00 00 00 00 00 00 50 02  20 00 70 7a 00 00 54 68     ......P. .pz..Th
+0040:  69 73 20 70 61 63 6b 65  74 20 69 73 20 62 65 69     is packet is bei
+0050:  6e 67 20 73 65 6e 74 20  62 79 20 74 65 73 74 20     ng sent by test 
+0060:  31 20 66 72 6f 6d 20 43  4c 49 20 74 6f 20 42 4d     1 from CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(0), len(112):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 88 a8 00 0a     ................
+0010:  81 00 00 14 08 00 45 00  00 5a 00 01 00 00 40 06     ......E..Z....@.
+0020:  74 98 02 02 02 02 01 01  01 01 00 14 00 50 00 00     t............P..
+0030:  00 00 00 00 00 00 50 02  20 00 70 7a 00 00 54 68     ......P. .pz..Th
+0040:  69 73 20 70 61 63 6b 65  74 20 69 73 20 62 65 69     is packet is bei
+0050:  6e 67 20 73 65 6e 74 20  62 79 20 74 65 73 74 20     ng sent by test 
+0060:  31 20 66 72 6f 6d 20 43  4c 49 20 74 a8 3c eb 16     1 from CLI t.<..
+Receiving packet from BM
+Dst Port = 0
+Dst Modid = 0
+bmi_tx_pkt, itm (0x1), etm(0x33)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 88 a8 00 0a     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 74 98 02 02     ..E..Z....@.t...
+0020:  02 02 01 01 01 01 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(0), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 88 a8 00 0a     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 74 98 02 02     ..E..Z....@.t...
+0020:  02 02 01 01 01 01 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  eb 5f 57 64                 om CLI t._Wd
+Receiving packet from BM
+Dst Port = 0
+Dst Modid = 0
+bmi_tx_pkt, itm (0x2), etm(0x34)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 0a     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 74 98 02 02     ..E..Z....@.t...
+0020:  02 02 01 01 01 01 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(0), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 0a     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 74 98 02 02     ..E..Z....@.t...
+0020:  02 02 01 01 01 01 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  cf 3a b3 60                 om CLI t.:.`
+Receiving packet from BM
+Dst Port = 0
+Dst Modid = 0
+bmi_tx_pkt, itm (0x3), etm(0x35)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(104)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 08 00 45 00     ..............E.
+0010:  00 5a 00 01 00 00 40 06  74 98 02 02 02 02 01 01     .Z....@.t.......
+0020:  01 01 00 14 00 50 00 00  00 00 00 00 00 00 50 02     .....P........P.
+0030:  20 00 70 7a 00 00 54 68  69 73 20 70 61 63 6b 65      .pz..This packe
+0040:  74 20 69 73 20 62 65 69  6e 67 20 73 65 6e 74 20     t is being sent 
+0050:  62 79 20 74 65 73 74 20  31 20 66 72 6f 6d 20 43     by test 1 from C
+0060:  4c 49 20 74 6f 20 42 4d                              LI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(0), len(104):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 08 00 45 00     ..............E.
+0010:  00 5a 00 01 00 00 40 06  74 98 02 02 02 02 01 01     .Z....@.t.......
+0020:  01 01 00 14 00 50 00 00  00 00 00 00 00 00 50 02     .....P........P.
+0030:  20 00 70 7a 00 00 54 68  69 73 20 70 61 63 6b 65      .pz..This packe
+0040:  74 20 69 73 20 62 65 69  6e 67 20 73 65 6e 74 20     t is being sent 
+0050:  62 79 20 74 65 73 74 20  31 20 66 72 6f 6d 20 43     by test 1 from C
+0060:  4c 49 20 74 bc 10 c5 f8                              LI t....
+Receiving packet from BM
+Dst Port = 0
+Dst Modid = 0
+bmi_tx_pkt, itm (0x4), etm(0x36)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 08 00 46 00     ..............F.
+0010:  00 5e 00 01 00 00 40 06  e0 90 02 02 02 02 01 01     .^....@.........
+0020:  01 01 83 03 10 00 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(0), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 08 00 46 00     ..............F.
+0010:  00 5e 00 01 00 00 40 06  e0 90 02 02 02 02 01 01     .^....@.........
+0020:  01 01 83 03 10 00 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 70 7a  00 00 54 68 69 73 20 70     ..P. .pz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  3d 23 d9 e6                 om CLI t=#..
+Receiving packet from BM
+Dst Port = 0
+Dst Modid = 0

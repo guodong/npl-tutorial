@@ -1,0 +1,133 @@
+
+/*
+*****************************************************************************************************
+** Purpose: 
+**   To demostrate & provide sandbox for experimenting with 'function' construct. 
+**
+** Description:
+**   User can access packet data, do arithmetic operations, and access global bus in fucntion construct
+**   In this example, function construct is used to do hash calculation by using packet's 5-tuple, and
+**     assign the hash value to a bus field. Hash value is then printed out in BM window.
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+** 
+** Verification method:
+**   (a). Send a TCP packet and check the hash value printed in the BM window.
+**   (b). Send a UDP packet and check the hash value printed in the BM windwo.
+** 
+*****************************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/*
+* Please refer to base_helper.npl for packet header definition and parsing
+*/
+
+/*
+* Local bus used as a local variable
+*/
+struct local_bus_t {
+    fields {
+        bit[32] hash_sip;
+        bit[32] hash_dip;
+        bit[8]  hash_protocol;
+        bit[16] hash_src_port;
+        bit[16] hash_dst_port;
+        bit[8] hash_val;
+    }
+}
+
+bus local_bus_t local_bus;
+
+/* ---------------------------------------
+* Function constructs
+*   Perform 5-tuple simple XOR hash calculation 
+*     and local bus field assignment
+* ---------------------------------------*/
+function do_ip_hash_calc() {
+    
+    // Init local variables
+    local_bus.hash_sip = 0;
+    local_bus.hash_dip = 0;
+    local_bus.hash_protocol = 0;
+    local_bus.hash_src_port = 0;
+    local_bus.hash_dst_port = 0;
+    local_bus.hash_val = 0x0;
+    
+    /* 
+    * Get 5-tuple values from packets 
+    *   packet parser is implemented in base_helper.npl
+    */
+    if (ingress_pkt.group2.ipv4._PRESENT) { 
+        // ipv4 packet
+        local_bus.hash_sip = ingress_pkt.group2.ipv4.sip;
+        local_bus.hash_dip = ingress_pkt.group2.ipv4.dip;
+        local_bus.hash_protocol = ingress_pkt.group2.ipv4.protocol;
+        if (ingress_pkt.group2.tcp._PRESENT) { 
+            // tcp packet
+            local_bus.hash_src_port = ingress_pkt.group2.tcp.src_port;
+            local_bus.hash_dst_port = ingress_pkt.group2.tcp.dst_port;
+        } else if (ingress_pkt.group2.udp._PRESENT) {
+            // udp packet
+            local_bus.hash_src_port = ingress_pkt.group2.udp.src_port;
+            local_bus.hash_dst_port = ingress_pkt.group2.udp.dst_port;
+        }
+       
+    }
+
+    // Do hash calculation using XOR
+    local_bus.hash_val = local_bus.hash_sip[31:24] ^ local_bus.hash_sip[23:16] ^
+                         local_bus.hash_sip[15:8] ^ local_bus.hash_sip[7:0]  ^
+                         local_bus.hash_dip[31:24] ^ local_bus.hash_dip[23:16] ^ 
+                         local_bus.hash_dip[15:8] ^ local_bus.hash_dip[7:0] ^
+                         local_bus.hash_protocol[7:0] ^
+                         local_bus.hash_src_port[15:8] ^ local_bus.hash_src_port[7:0] ^
+                         local_bus.hash_dst_port[15:8] ^ local_bus.hash_dst_port[7:0];
+}
+
+
+/*************************************
+PROGRAM
+*************************************/
+program fun_ip_hash_calc {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    /* Calling parser tree parsing from main program */
+    parse_begin(start);
+
+    // Function to do hash calculation
+    do_ip_hash_calc();
+
+    // Print out the hash value of the packet
+    print ("5-tuple hash value of the packet is: 0x%x\n", local_bus.hash_val);
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

@@ -1,0 +1,116 @@
+
+#include "l2_header_format.npl"
+
+// Use defines until registers are implemented
+#define rTPID0 0x8100
+#define rTPID1 0x02
+#define rTPID2 0x04
+#define rTPID3 0x08
+
+struct group1_t {
+    fields {
+        l2_t         l2;
+        l2_t         new_l2;
+        snap_llc_t   snap_or_llc;
+        snap_t       snap;
+        llc_t        llc;
+        vlan_t       otag;
+        vlan_t       itag;
+        }
+}
+
+struct ing_pkt_t {
+    fields {
+        group1_t group1;
+        }
+}
+
+struct egr_pkt_t {
+    fields {
+        group1_t group1;
+    }
+}
+
+packet ing_pkt_t ingress_pkt;
+packet egr_pkt_t egress_pkt;
+
+parser_node start {
+    root_node : 1; 
+    switch(obj_bus.port_type_cfg) {
+        0x3     :   next_node ethernet;
+        default :   next_node ingress;
+    }
+}
+
+parser_node ethernet {
+    extract_fields(ingress_pkt.group1.l2);
+    if (control_id.ts_enable == 0) {
+        if (control_id.otpid_enable[3:3] && latest.ethertype == rTPID0) {
+            //0x8100
+            next_node otag;
+        } 
+        if (control_id.otpid_enable[2:2] && latest.ethertype == rTPID1) {
+            //0x9100
+            next_node otag;
+        } 
+        if (control_id.otpid_enable[1:1] && latest.ethertype == rTPID2) {
+            //0x88A8
+            next_node otag;
+        }
+        if (control_id.otpid_enable[0:0] && latest.ethertype == rTPID3) {
+            //0xAA8A
+            next_node otag;
+        } 
+        switch(latest.ethertype) {
+            0x9100            : next_node itag;
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node otag {
+    extract_fields(ingress_pkt.group1.otag);
+    switch(latest.ethertype) {
+        0x9100            : next_node itag;
+        0x0000 mask 0xFC00: next_node snap_or_llc;
+        0x0400 mask 0xFE00: next_node snap_or_llc;
+        default           : next_node ingress;
+    }
+}
+
+parser_node itag {
+    extract_fields(ingress_pkt.group1.itag);
+    switch(latest.ethertype) {
+        0x0000 mask 0xFC00: next_node snap_or_llc;
+        0x0400 mask 0xFE00: next_node snap_or_llc;
+        default           : next_node ingress;
+    }
+}
+
+parser_node snap_or_llc {
+    extract_fields(ingress_pkt.group1.snap_or_llc);
+    switch (latest.snap_llc) {
+        0xAAAA03000000   : next_node snap;
+        default          : next_node llc; 
+    }
+}
+
+parser_node snap {
+    extract_fields(ingress_pkt.group1.snap);
+    next_node ingress;
+}
+
+parser_node llc {
+    extract_fields(ingress_pkt.group1.llc);
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1; 
+}
+

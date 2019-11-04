@@ -1,0 +1,121 @@
+/*
+*********************************************************************************
+** Purpose: illustrate bus construct in NPL.
+**
+** Description:
+**   Each functional block in a networking device interacts with its
+**   neighboring blocks by reading or writing one or more buses.
+**   Logically speaking, buses flow through the functional blocks
+**   to form a pipeline. A functional block has the option of modifying
+**   bus fields as they pass through.  For example, Logical Tables,
+**   Functions and Special Functions typically read and write bus fields.
+**   The Parser block takes the packet as input and writes parsed fields
+**   to the bus, while the Editor uses the bus fields to update or create
+**   an output packet.
+**
+**   This program defines a bus, assigns values to the fields in a bus in 
+**   one function and displays them in another function.
+**
+** Topology diagram:
+**
+**                 +------------------+
+**                 |                  |
+**    ingress_port |                  |egress_port
+**      +----------+                  +-----------+
+**                 |                  |
+**                 |                  |
+**                 +------------------+
+**
+** Notes: 
+** Verification method: 
+**   Use the packet contents to populate the fields of a bus and dsiplay them
+**   on Behavior Model console.
+**
+*********************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/*
+ * Define a structure with overlays.
+ * overlays allows to reference fields in a struct in more than one way.
+ * overlays are optional.
+ */
+
+struct packet_field_bus_t {
+    fields {
+      bit[32]  src_ipv4_address;
+      bit[32]  dst_ipv4_address;
+    }
+    /*
+    * Specify the overlays among the fields of the struct. 
+    */
+    overlays {
+      src_ipv4_address_byte0 : src_ipv4_address[7:0];
+      src_ipv4_address_byte1 : src_ipv4_address[15:8];
+      dst_ipv4_address_byte0 : dst_ipv4_address[7:0];
+      dst_ipv4_address_byte1 : dst_ipv4_address[15:8];
+    }
+}
+
+/*
+ * "bus" construct is used to define logical bus.
+ * In this example, fields and overlays defined in 
+ * struct "packet_field_bus_t" makeup the "packet_field_bus".
+ */
+bus packet_field_bus_t packet_field_bus;
+
+/*
+ * Populate fields in "packet_field_bus"
+ */
+function do_populate_packet_field_bus() {
+    packet_field_bus.src_ipv4_address = ingress_pkt.l3_hdr.ipv4.sip;
+    packet_field_bus.dst_ipv4_address = ingress_pkt.l3_hdr.ipv4.dip;
+}
+
+/*
+ * Access fields in "packet_field_bus"
+ */
+function do_access_packet_field_bus() {
+    print("Source ip address is 0X%x\n", packet_field_bus.src_ipv4_address);
+    print("Destination ip address is 0X%x\n", packet_field_bus.dst_ipv4_address);
+    /*
+     * Access using overlays.
+     */
+    print("Source ip address byte 0 is 0X%x\n", packet_field_bus.src_ipv4_address_byte0);
+    print("Source ip address byte 1 is 0X%x\n", packet_field_bus.src_ipv4_address_byte1);
+    print("Destination ip address byte 0 is 0X%x\n", packet_field_bus.dst_ipv4_address_byte0);
+    print("Destination ip address byte 1 is 0X%x\n", packet_field_bus.dst_ipv4_address_byte1);
+
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program bus_example {
+
+    /* INPUT:
+     * BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    /* Ingress */
+    parse_begin(start);
+
+    if (ingress_pkt.l3_hdr.ipv4._PRESENT) {
+        do_populate_packet_field_bus();
+        do_access_packet_field_bus();
+    }
+
+    /* MMU: */
+    base_assign_destination();
+    BASE_MMU; /* BASE_MMU macro implements default MMU SpecialFunction*/
+
+    /* Egress */
+    base_egress(); /* destination-port is same as ingress-port */
+
+    /* OUTPUT:
+     * BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+
+}

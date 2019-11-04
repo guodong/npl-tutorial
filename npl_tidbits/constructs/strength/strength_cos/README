@@ -1,0 +1,86 @@
+
+Description:
+============
+This program illustrates how to use NPL's 'strength' constructs and provides sandbox for experimenting.
+
+'strength_cos' program illustrates strenght-based mechanism to decide a winning cos-value-assignment when multiple tables can assign cos-value. In the program there are three sources for cos assignment:
+    a. pri_cos_mapping  :- assigns cos values based on 802.1p value(vlan_priority).
+    b. dscp_cos_mapping :- assigns cos values based on dscp value in IP header.
+    c. local_bus        :- default cos assignment (no mapping from packet contents).
+strength_resolution() construct resolves the winning object based on 'cos_strength_profile_table' and 'strength_index' provided by each of cos assignment sources.
+
+
+Contents:
+=========
+strength_cos
+|-- npl
+|   |-- strength_cos.npl (main program code)
+|   |-- base_helper.npl   (support code that is needed for program to compile & execute)
+|-- config.ini            (configuration file that can be used as-is)
+|-- Makefile              
+|-- bm_tests              (Scripts to support topology, packet crafting, packet send & receive)
+    |-- corp_net
+    |   |-- testPkt.py
+    |   |-- tbl_cfg_cos.txt
+    |-- sf_definition     (Special Function definition to interact with BMI* code)
+        |-- bm_sfc.cpp
+
+Compile & Run the program:
+==========================
+To compile 'strength_cos' program, run following commands from program directory:
+   * make fe_nplsim
+   * make nplsim_comp
+At this point, all files needed to run NPL Behavior Model (BM) are generated.
+There are two options to run 'strength_cos' program with NPL BM.
+   1. If xterm is supported, just run: 
+      *   make nplsim_run    (this is simple and easy way to run)
+   2. If xterm is NOT supported then:  (manually running BM components)
+      2a. Open two terminal windows and browse to 'strength_cos' program directory.
+      2b. Terminal-1: Run 'strength_cos' program's Behavior Model:
+          :> source ./ncsc-x.x.x/bin/setup.sh
+          cd <npl_example>  
+          :> ./fe_output/bmodel/bin/bmodel.sim
+      2c. Terminal-2: Run Behavior Model CLI program.
+          :> source ./ncsc-x.x.x/bin/setup.sh
+          cd <npl_example>  
+          :> python $BRCM_NCS_ROOT/ncsc-x.x.x/bmi/cli/bmif_cli.py --regfile ./fe_output/regfiles/nplsim_physical_regsfile.yml
+
+
+Populate Lookup Tables Run-Time
+===============================
+Default packet generation script included with the program does following:
+   (a). Populate pri_cos_mapping_table with following pattern
+        >> pri_cos_mapping_table[i].cos = i,  cos_strength_index = i
+   (b). Populate dscp_cos_mapping_table with following pattern
+        >> dscp_cos_mapping_table[0,..,7].cos = 0, cos_strength_index = 0
+        >> dscp_cos_mapping_table[8,..,15].cos = 1, cos_strength_index = 1
+           ......
+        >> dscp_cos_mapping_table[56,..,63].cos = 7, cos_strength_index = 7
+   (c). Populate cos_strength_profile_table with follwoing pattern
+        >> cos_strength_profile_table[i].cos_strength = i
+
+Packet Test:
+============
+   (1). Send a packet with pri = 0, dscp = 0 from port-0 to BM
+        Strength of pri_cos_mapping_table and dscp_cos_mapping_table are 0, while
+          strength of local_bus.cos is 1, the winning object is local_bus.cos, print out
+          cos value in BM window
+        Receive packet from BM
+
+   (2). Send a packet with pri = 3, dscp = 8 from port-0 to BM
+        Strength of pri_cos_mapping_table is 3, strength of dscp_cos_mapping_table is 1,
+          strength of local_bus.cos is 1. The winning object is pri_cos_mapping_table,
+          cos value is 3, print out the cos value in BM window
+        Receive packet from BM
+
+   (3). Send a packet with pri = 3, dscp = 40 from port-0 to BM
+        Strength of pri_cos_mapping_table is 3, strength of dscp_cos_mapping_table is 5,
+          strength of local_bus.cos is 1. The winning object is dscp_cos_mapping_table,
+          cos value is 5, print out the cos value in BM window
+        Receive packet from BM
+
+To run the test, open terminal and browse to 'strength_cos' program directory.
+Run the following packet generation script included with the program.
+   :> python bm_tests/corp_net/testPkt.py
+
+*BMI: Behavior Model Infrastructure

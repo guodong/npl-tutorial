@@ -1,0 +1,55 @@
+sc_main() enter
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(68)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  00 00 54 68 69 73 20 70  61 63 6b 65 74 20 69 73     ..This packet is
+0020:  20 62 65 69 6e 67 20 73  65 6e 74 20 62 79 20 74      being sent by t
+0030:  65 73 74 20 31 20 66 72  6f 6d 20 43 4c 49 20 74     est 1 from CLI t
+0040:  6f 20 42 4d                                          o BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(1), len(68):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  00 00 54 68 69 73 20 70  61 63 6b 65 74 20 69 73     ..This packet is
+0020:  20 62 65 69 6e 67 20 73  65 6e 74 20 62 79 20 74      being sent by t
+0030:  65 73 74 20 31 20 66 72  6f 6d 20 43 4c 49 20 74     est 1 from CLI t
+0040:  67 6d 5b fa                                          gm[.
+Receiving packet from BM
+Dst Port = 1
+Dst Modid = 0
+bmi_tx_pkt, itm (0x1), etm(0x56)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(68)
+0000:  01 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  00 00 54 68 69 73 20 70  61 63 6b 65 74 20 69 73     ..This packet is
+0020:  20 62 65 69 6e 67 20 73  65 6e 74 20 62 79 20 74      being sent by t
+0030:  65 73 74 20 31 20 66 72  6f 6d 20 43 4c 49 20 74     est 1 from CLI t
+0040:  6f 20 42 4d                                          o BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(1), len(68):
+
+0000:  01 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  00 00 54 68 69 73 20 70  61 63 6b 65 74 20 69 73     ..This packet is
+0020:  20 62 65 69 6e 67 20 73  65 6e 74 20 62 79 20 74      being sent by t
+0030:  65 73 74 20 31 20 66 72  6f 6d 20 43 4c 49 20 74     est 1 from CLI t
+0040:  f2 40 6e 75                                          .@nu
+Receiving packet from BM
+Dst Port = 1
+Dst Modid = 0

@@ -1,0 +1,94 @@
+
+/*
+*****************************************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox for experimenting with 'logical_register construct'.
+**
+** Description:
+**   Logical_register construct is used to define a single level storage.
+**   In this example, a simple 32-bit packet counter is implemented as 'logical_register'.
+**   The simple ing_pkt_counter is initialized with 0, and incremented whenever a packet comes in.
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes: 
+**    1. Logical_register value assignment is not allowed in the main program,  
+**      it can be done in the function construct.
+**    2. The latest NLC version doesn't support logical register access from bm cli. The program use 
+**      default value of the register to do the demo, and register value is printed out in BM window 
+**      by 'print construct'
+**
+** Verification method: 
+**    a. bm_tests/corp_net/testPkt.py sends 5 packets in every 1 secend.
+**    b. BM window prints out ing_pkt_counter value incremented per packet
+*****************************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+
+/* -------------------------------
+* Logical register construct
+*   A simple ingress packet counter
+* ------------------------------- */
+logical_register ing_pkt_counter {
+    fields {
+        bit[32]  pkt_count = 0;   // default value of the counter is set to zero
+    }
+}
+
+/* -------------------------------
+*  Function construct
+*    Register value assignment need to be done in a function construct
+* ------------------------------- */
+function do_counter_update() {
+    // Increment the counter for every packet
+    ing_pkt_counter.pkt_count = ing_pkt_counter.pkt_count + 1;
+}
+
+
+
+/*************************************
+PROGRAM
+*************************************/
+program reg_pkt_counter {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    /* Calling parser tree parsing from main program */
+    parse_begin(start);
+
+    /* Register value cannot be assigned in the main program, but it can be read. */ 
+
+    // Function to do counter update.
+    do_counter_update();
+
+    // Print out the the counter value in BM window
+    print ("ing_pkt_counter = %d\n", ing_pkt_counter.pkt_count);
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

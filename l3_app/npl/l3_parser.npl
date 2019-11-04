@@ -1,0 +1,286 @@
+
+#include "l3_header_format.npl"
+
+// Use defines until registers are implemented
+#define rTPID0 0x8100
+#define rTPID1 0x02
+#define rTPID2 0x04
+#define rTPID3 0x08
+
+struct group1_t {
+    fields {
+        l2_t         l2;
+        l2_t         new_l2;
+        snap_llc_t   snap_or_llc;
+        snap_t       snap;
+        llc_t        llc;
+        vntag_t      vntag;
+        etag_t       etag;
+        vlan_t       otag;
+        vlan_t       itag;
+        }
+}
+
+struct group2_t {
+    fields {
+        ipv4_t       ipv4;
+        ipv6_t       ipv6;
+        tcp_t        tcp;
+        int_header_t int_header;
+        int_switch_id_header_t                  int_switch_id_header;
+        int_ingress_port_id_header_t            int_port_id_header;  
+        int_hop_latency_header_t                int_hop_latency_header;
+        int_q_occupancy_header_t                int_q_occupancy_header;
+        int_ingress_tstamp_header_t             int_ingress_tstamp_header;
+        int_egress_port_id_header_t             int_egress_port_id_header;
+        int_q_congestion_header_t               int_q_congestion_header;
+        int_egress_port_tx_utilization_header_t int_egress_port_tx_utilization_header;
+        udp_t        udp;
+        }
+}
+
+struct ing_pkt_t {
+    fields {
+        group1_t group1;
+        group2_t group2;
+        group2_t group4;
+        }
+}
+
+struct egr_pkt_t {
+    fields {
+        group1_t group1;
+        group2_t group2;
+        group2_t group4;
+    }
+}
+
+packet ing_pkt_t ingress_pkt;
+packet egr_pkt_t egress_pkt;
+
+parser_node start {
+    root_node : 1; 
+    switch(obj_bus.port_type_cfg) {
+        0x3     :   next_node ethernet;
+        default :   next_node ingress;
+    }
+}
+
+parser_node ethernet {
+    extract_fields(ingress_pkt.group1.l2);
+    if (control_id.ts_enable == 0) {
+        if (control_id.otpid_enable[3:3] && latest.ethertype == rTPID0) {
+            //0x8100
+            next_node otag;
+        } 
+        if (control_id.otpid_enable[2:2] && latest.ethertype == rTPID1) {
+            //0x9100
+            next_node otag;
+        } 
+        if (control_id.otpid_enable[1:1] && latest.ethertype == rTPID2) {
+            //0x88A8
+            next_node otag;
+        }
+        if (control_id.otpid_enable[0:0] && latest.ethertype == rTPID3) {
+            //0xAA8A
+            next_node otag;
+        } 
+        switch(latest.ethertype) {
+            0xABCD            : next_node vntag;
+            0x8888            : next_node etag;
+            0x9100            : next_node itag;
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node pause {
+    extract_fields(ingress_pkt.group1.l2);
+    next_node ingress;
+}
+
+parser_node vntag {
+    extract_fields(ingress_pkt.group1.vntag);
+    if (control_id.ts_enable == 0) {
+        if (control_id.otpid_enable[3:3] && latest.ethertype == rTPID0) {next_node otag;} //0x8100
+        if (control_id.otpid_enable[2:2] && latest.ethertype == rTPID1) {next_node otag;} //0x9100
+        if (control_id.otpid_enable[1:1] && latest.ethertype == rTPID2) {next_node otag;} //0x88A8
+        if (control_id.otpid_enable[0:0] && latest.ethertype == rTPID3) {next_node otag;} //0xAA8A
+        switch(latest.ethertype) {
+            0x9100            : next_node itag;
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node etag {
+    extract_fields(ingress_pkt.group1.etag);
+    if (control_id.ts_enable == 0) {
+        if (control_id.otpid_enable[3:3] && latest.ethertype == rTPID0) {next_node otag;} //0x8100
+        if (control_id.otpid_enable[2:2] && latest.ethertype == rTPID1) {next_node otag;} //0x9100
+        if (control_id.otpid_enable[1:1] && latest.ethertype == rTPID2) {next_node otag;} //0x88A8
+        if (control_id.otpid_enable[0:0] && latest.ethertype == rTPID3) {next_node otag;} //0xAA8A
+        switch(latest.ethertype) {
+            0x9100            : next_node itag;
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node otag {
+    extract_fields(ingress_pkt.group1.otag);
+    if (control_id.ts_enable == 0) {
+        switch(latest.ethertype) {
+            0x9100            : next_node itag;
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node itag {
+    extract_fields(ingress_pkt.group1.itag);
+    if (control_id.ts_enable == 0) {
+        switch(latest.ethertype) {
+            0x0000 mask 0xFC00: next_node snap_or_llc;
+            0x0400 mask 0xFE00: next_node snap_or_llc;
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node snap_or_llc {
+    extract_fields(ingress_pkt.group1.snap_or_llc);
+    switch (latest.snap_llc) {
+        0xAAAA03000000   : next_node snap;
+        default          : next_node llc; 
+    }
+}
+
+parser_node snap {
+    extract_fields(ingress_pkt.group1.snap);
+    if (control_id.ts_enable == 0) {
+        switch(latest.ethertype) {
+            0x0800            : next_node ipv4;
+            0x86DD            : next_node ipv6;
+            default           : next_node ingress;
+        }
+    }
+    else {
+        next_node ingress;
+    }
+}
+
+parser_node llc {
+    extract_fields(ingress_pkt.group1.llc);
+    next_node ingress;
+}
+
+parser_node ipv4 {
+    extract_fields(ingress_pkt.group2.ipv4);
+    switch (latest.protocol) {
+        0x06    : next_node tcp;
+        0x11    : next_node udp;
+        0x04    : next_node inner_ipv4;
+        0x29    : next_node inner_ipv6;
+        default : next_node ingress;
+    }
+}
+
+parser_node ipv6 {
+    extract_fields(ingress_pkt.group2.ipv6);
+    switch(latest.next_header) {
+        0x06    : next_node tcp;
+        0x11    : next_node udp;
+        0x04    : next_node inner_ipv4;
+        0x29    : next_node inner_ipv6;
+        default : next_node ingress;
+    }
+}
+
+parser_node tcp {
+    extract_fields(ingress_pkt.group2.tcp);
+    switch(latest.dst_port) {
+        0x66    : next_node int;
+        default : next_node ingress;
+    }
+}
+
+parser_node udp {
+    extract_fields(ingress_pkt.group2.udp);
+    switch(latest.dst_port) {
+        0x66    : next_node int;
+        default : next_node ingress;
+    }
+}
+
+parser_node inner_ipv4 {
+    extract_fields(ingress_pkt.group4.ipv4);
+    switch (latest.protocol) {
+        0x06    : next_node inner_tcp;
+        0x11    : next_node inner_udp;
+        default : next_node ingress;
+    }
+}
+
+parser_node inner_ipv6 {
+    extract_fields(ingress_pkt.group4.ipv6);
+    switch(latest.next_header) {
+        0x06    : next_node inner_tcp;
+        0x11    : next_node inner_udp;
+        default : next_node ingress;
+    }
+}
+
+parser_node inner_tcp {
+    extract_fields(ingress_pkt.group4.tcp);
+    next_node ingress;
+}
+
+parser_node inner_udp {
+    extract_fields(ingress_pkt.group4.udp);
+    next_node ingress;
+}
+
+parser_node int {
+    extract_fields(ingress_pkt.group2.int_header);
+    next_node ingress;
+}
+
+
+parser_node ingress {
+    end_node : 1; 
+}
+

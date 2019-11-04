@@ -1,0 +1,220 @@
+
+/*
+********************************************************************************
+** Purpose:
+**   To demonstrate & provide sandbox to experiment packet editing constructs
+**   of NPL.
+**
+** Description:
+**   Editor constructs help in modify packets. Functions include
+**     add/remove/replace egress packet headers, update checksum, and
+**     update packet length.
+**   This example manipulates L2 outer tag to illustrate following editor
+**   functions: add/remove/replace packet headers.
+**   Tag operations are based on the following logic:
+**     a. If the incoming packet contains outer tag, remove outer tag, and
+**        replace ethertype field in L2 header.
+**     b. If the incoming packet doesn't contain outer tag, add outer tag,
+**        replace ethertype field in L2 header.
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+**   1. Editor constructs must be called from functions.
+**
+** Verification method:
+**   a. Send untagged packet from port-0 to BM.
+**      BM window shows packet is untagged and add an outer tag.
+**      Received packet is outer tagged, outer TPID is 0x8100.
+
+**   b. Send single outer tagged packet from port-0 to BM.
+**      BM window shows packet is single outer tagged and remove the outer tag.
+**      Received packet is untagged.
+
+**   c. Send single inner tagged packet from port-0 to BM.
+**      BM window shows packet is single inner tagged and add an outer tag.
+**      Receive packet is double tagged, outer TPID is 0x8100, inner TPID is
+**      0x9100
+
+**   d. Send  double tagged packet from port-0 to BM
+**      BM window shows packet is double tagged and remove the outer tag.
+**      Receive packet single inner tagged, TPID is 0x9100
+**
+********************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+
+/*
+*  Define outer TPID=0x8100 and inner TPID=0x9100 for packet parser.
+*/
+#define rTPID_OUTER 0x8100
+#define rTPID_INNER 0x9100
+
+/*
+* Define default VLAN and priority when adding an outer tag
+*/
+#define rDEFAULT_VID  0xa
+#define rDEFAULT_PRI  0x0
+
+/*
+* Please refer to base_helper.npl for packet header definition
+*/
+
+/*-----------------------------------------
+* Parser construct
+*---------------------------------------- */
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+// Ethernet header parsing.
+parser_node ethernet {
+    extract_fields(ingress_pkt.grp.l2);
+    switch (latest.ethertype) {
+        rTPID_OUTER: next_node outer_tag;
+        rTPID_INNER: next_node inner_tag;
+        default:     next_node ingress;
+    }
+}
+
+// Outer tag parsing.
+parser_node outer_tag {
+    extract_fields(ingress_pkt.grp.outer_tag);
+    switch (latest.ethertype) {
+        rTPID_INNER: next_node inner_tag;
+        default:     next_node ingress;
+    }
+}
+
+// Inner tag parsing.
+parser_node inner_tag {
+    extract_fields(ingress_pkt.grp.inner_tag);
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+
+/*
+* Local bus used as local variable.
+*/
+struct local_bus_t {
+    fields {
+        bit[16] tpid;
+        bit[12] vid;
+        bit[3]  pcp;
+    }
+}
+
+bus local_bus_t local_bus;
+
+/* --------------------------------------------------
+* Funtion constructs to perform packet modifications
+*   - If packet is outer tagged, delete outer tag.
+*   - If packet doesn't have outer tag, add an outer tag.
+* ---------------------------------------------------*/
+function do_egress_pkt_modify() {
+
+    local_bus.tpid = rTPID_OUTER;
+
+    egress_pkt.grp.l2 = ingress_pkt.grp.l2;
+    egress_pkt.grp.outer_tag = ingress_pkt.grp.outer_tag;
+    egress_pkt.grp.inner_tag = ingress_pkt.grp.inner_tag;
+
+    if (egress_pkt.grp.outer_tag._PRESENT) {
+        /* Double Tagged or Single Outer Tagged  packet, delete outer tag .*/
+
+        print ("Remove outer tag, and replace L2 ethertype\n");
+
+        // editor function: replace l2.ethertype field
+        replace_header_field (egress_pkt.grp.l2.ethertype, egress_pkt.grp.outer_tag.ethertype);
+
+        // editor function: delete outer_tag header
+        delete_header(egress_pkt.grp.outer_tag);
+    } else {
+        /* Untagged or Inner Tagged  packet, add outer tag .*/
+        egress_pkt.grp.outer_tag.vid = rDEFAULT_VID;
+        egress_pkt.grp.outer_tag.pcp = rDEFAULT_PRI;
+
+        print ("Add outer tag, replace L2 ethertype\n");
+
+        if (egress_pkt.grp.inner_tag._PRESENT) {
+            // Inner Tagged  packet, set Outer Tag  TPID.
+            egress_pkt.grp.outer_tag.ethertype = rTPID_INNER;
+        } else {
+            // Untagged packet, ethertype obtained from L2 header
+            egress_pkt.grp.outer_tag.ethertype = egress_pkt.grp.l2.ethertype;
+        }
+
+        // editor function: add packet header inside a packet.
+        add_header(egress_pkt.grp.outer_tag);
+
+        /* editor function: replace field inside a packet header.
+         * Note: replace_header_field arguments must be packet field or bus
+         * field.
+         */
+        replace_header_field (egress_pkt.grp.l2.ethertype, local_bus.tpid);
+
+    }
+
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program editor_l2_tag {
+
+    // INPUT
+    /* BASE_INPUT macro implements standard input from BMI
+     * (Behavior Model Infrastructure) to program
+     */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    if (ingress_pkt.grp.outer_tag._PRESENT) {
+        if (ingress_pkt.grp.inner_tag._PRESENT) {
+            print("Ingress packet is double tagged. \n");
+        } else {
+            print("Ingress packet is single outer tagged. \n");
+        }
+    } else {
+        if (ingress_pkt.grp.inner_tag._PRESENT) {
+            print("Ingress packet is single inner tagged. \n");
+        } else {
+            print("Ingress packet is untagged. \n");
+        }
+    }
+
+    //MMU
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Do egress packet modifications.
+    do_egress_pkt_modify();
+
+    // OUTPUT
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}

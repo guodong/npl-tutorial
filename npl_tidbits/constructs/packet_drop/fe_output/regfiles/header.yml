@@ -1,0 +1,75 @@
+HEADER:
+    ethernet_t:
+        DESC: ''
+        FIELDS:
+            _PRESENT:
+                DESC: |-
+                    PRESENT metadata
+                MAXBIT: 112
+                MINBIT: 112
+                ORDER: 3
+                TAG: metadata
+                VAR_LEN: false
+                WIDTH: 1
+            ether_type:
+                DESC: ''
+                MAXBIT: 111
+                MINBIT: 96
+                ORDER: 2
+                TAG: data
+                VAR_LEN: false
+                WIDTH: 16
+            macda:
+                DESC: ''
+                MAXBIT: 47
+                MINBIT: 0
+                ORDER: 0
+                TAG: data
+                VAR_LEN: false
+                WIDTH: 48
+            macsa:
+                DESC: ''
+                MAXBIT: 95
+                MINBIT: 48
+                ORDER: 1
+                TAG: data
+                VAR_LEN: false
+                WIDTH: 48
+        TYPE: HEADER
+    group_t:
+        DESC: ''
+        FIELDS:
+            ether:
+                DESC: ''
+                FORMAT_IN_FORMAT: ethernet_t
+                MAXBIT: 111
+                MINBIT: 0
+                ORDER: 0
+                SIZE: 1
+                TAG: data
+                VAR_LEN: false
+                WIDTH: 112
+        TYPE: GROUP
+    ingress_pkt_t:
+        DESC: ''
+        FIELDS:
+            group:
+                DESC: ''
+                FORMAT_IN_FORMAT: group_t
+                MAXBIT: 111
+                MINBIT: 0
+                ORDER: 0
+                SIZE: 1
+                TAG: data
+                VAR_LEN: false
+                WIDTH: 112
+        TYPE: PACKET
+NCS_SIGNATURE:
+    CHIP_ID: ''
+    CHIP_REV: ''
+    IDENTIFIER: f18938b1ef32ddca170529d2027b30ce
+    NCS_RUN_DATE_TIME: '2019-06-08 11:39:35.359008'
+    NCS_VERSION: 1.3.3rc4
+    NPL_APP: Default-App
+    NPL_APP_DESCRIPTION: Default Npl Application
+    NPL_APP_VERSION: '0.0'

@@ -1,0 +1,151 @@
+
+/*
+*****************************************************************************************************
+** Purpose: 
+**   To demonstrate and provide sandbox for experimenting with 'logical register construct'
+** 
+** Description:
+**   Logical_register construct can be used in parser construct.
+**   In this example, two register constructs are created:
+**     a. tpid_enable: a single 4-bit register with each bit to eanble tpid[x] checking
+**     b. tpid_values: a multi-field register, containing 4 tpid's for packet parsing
+**   The program will parse incoming packets' vlan tag based on 'tpid_enable' and 'tpid_values'
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes: 
+**   The program use default value of the register to do the demo. 
+**     
+** Verification method: 
+**   1. Run 'python bm_tests/corp_net/testPkt.py
+**   2. Monitor the debug message in BM window
+*****************************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+
+/* ----------------------------------
+* Logical register construct
+* ----------------------------------*/
+/* Single field logical register */
+logical_register tpid_enable {
+    fields {
+        bit[4] reg_val = 0x7; // default reg value assignment
+    }
+}
+
+/* Multi-field logical register, greater then 32bit. */
+logical_register tpid_values{
+    fields {
+        bit[16] tpid0 = 0x8100;  // default reg value assignment
+        bit[16] tpid1 = 0x9100;
+        bit[16] tpid2 = 0x88a8;
+        bit[16] tpid3 = 0x0;
+    }
+}
+
+
+// Local bus construct, used as a variable
+struct local_bus_t {  
+    fields {
+        bit  tagged;
+        bit[12] vid;
+    }
+}
+
+bus local_bus_t  local_bus;
+
+/*
+* Please refer to base_helper.npl for packet header definition
+*/
+
+/* ----------------------------------
+* Parser construct
+* ----------------------------------*/
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+/*
+*  Logical register can be used in parser construct for packet parsing
+*/
+parser_node ethernet {
+    extract_fields(ingress_pkt.group.ether);
+    local_bus.tagged = 0x0;
+
+    if ((tpid_enable.reg_val & 0x1) && (latest.ether_type == tpid_values.tpid0)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x2) && (latest.ether_type == tpid_values.tpid1)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x4) && (latest.ether_type == tpid_values.tpid2)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x8) && (latest.ether_type == tpid_values.tpid3)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    
+    next_node ingress;
+}
+
+parser_node vlan_tag {
+    extract_fields(ingress_pkt.group.vlan);
+    local_bus.vid = ingress_pkt.group.vlan.vid;
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program reg_tpid {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    // Checking if it is a tagged packet, print out vid.
+    if (ingress_pkt.group.vlan._PRESENT) {
+        print ("It is a tagged packet, VLAN ID = %d\n", local_bus.vid);
+    } else {
+        print ("It is a untagged packet.\n");
+    }
+    
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU Special Function*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

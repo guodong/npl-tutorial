@@ -1,0 +1,139 @@
+
+/*
+*******************************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox for experimenting with 'packet drop' construct
+**
+** Description:
+**   'Packet Drop' construct is used to drop a packet in pipeline.
+**   This example trys to illustrate how to call 'Packet drop' in the ingress pipeline and
+**     egress pipeline. The NPL code will do mac_sa check in ingress pipe and drop  
+**     mac_sa = 0 packets. In egress pipe, mac_da is checked and packets with mac_da = 0
+**     are dropped.
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+** 
+** Notes:
+**   1. packet_drop()/packet_trace()/packet_count() construct cannot be called in the 
+**     main program, but can be called in a function construct.
+**   2. In current BM implementation, packet drop construct will not take effect. 
+**   3. This NPL code uses drop_vector defined in egr_aux_bus to do packet drop. 
+**      The implementation of packet drop_vector is in special function
+**      _BModel::sfc_edb in bm_tests/sf_definition/bm_sfc.cpp
+**
+** Verification method: 
+**   a. Send a normal packet from port-0 to BM
+**      Receive a packet from port-1
+**   b. Send a MAC_SA=0 packet from port-0 to BM
+**      BM window prints packet drop, and drop vector = 1
+**   c. Send a MAC_DA=0 packet from port-0 to BM
+**      BM window prints packet drop, and drop vector = 2
+**
+*******************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+#define ZERO_MAC 		0x000000000000
+
+/* Drop result code */
+#define DROP_REASON__ZERO_SA 	0x00000001
+#define DROP_REASON__ZERO_DA 	0x00000002
+
+/*
+* Please refer to base_helper.npl for packet header definition and parsing
+*/
+
+/* 
+* Local variables defined as a bus construct
+*/
+struct local_bus_t {
+    fields {
+        bit      zero_sa;
+        bit      zero_da;
+    }
+}
+
+bus local_bus_t local_bus;
+
+
+/*-----------------------------------
+* Function construct
+*---------------------------------- */
+/* Ingress sa check */
+function ing_do_sa_check() {
+
+    if (ingress_pkt.group.ether.macsa == ZERO_MAC) {
+        local_bus.zero_sa = 1;
+        // Drop packet with zero sa
+        print ("Calling packet drop at ingress\n");
+        packet_drop(local_bus.zero_sa, DROP_REASON__ZERO_SA, 0);
+
+        // Clear l2_bitmap at ingress
+        ccbi.l3_pbm = 0;
+        ccbi.l2_pbm = 0;
+        
+        // Set drop_vector at ingress based on BM implemetation
+        egr_aux_bus.drop_vector = DROP_REASON__ZERO_SA;
+    }
+}
+
+/* Egress da check */
+function egr_do_da_check() {
+
+    if (ingress_pkt.group.ether.macda == ZERO_MAC) {
+
+        local_bus.zero_da = 1;
+        // Drop packets with zero da
+        print ("Calling packet drop at egress\n");
+        packet_drop(local_bus.zero_da, DROP_REASON__ZERO_DA, 0);
+
+        // Set drop_vector at egress based on BM implemetation
+        egr_aux_bus.drop_vector = DROP_REASON__ZERO_DA;
+    }
+}
+
+
+/*************************************
+PROGRAM
+*************************************/
+program pkt_drop {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    
+    base_assign_destination();
+
+    /* Note: packet_drop/ packet_count / packet_trace cannot be called in the main program */
+    // Calling a function to perform mac sa check
+    ing_do_sa_check();
+
+    //MMU:
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+
+    // Calling a function to perform mack da check
+    egr_do_da_check();
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

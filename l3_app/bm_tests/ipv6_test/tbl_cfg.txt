@@ -1,0 +1,60 @@
+# port_table: index; keys: port_num
+lt port_table insert port_num=0 default_vid=0 l3_enable=1 otag_enable=0 src_modid=0x9
+lt port_table insert port_num=5 default_vid=0 l3_enable=1 otag_enable=0 src_modid=0x9
+
+# vlan_table: index; keys: vid
+lt vlan_table insert vid=1 l3_enable=1 stg_ptr=5 vlan_membership_bitmap=0x21 vrf=1
+lt vlan_table insert vid=2 l3_enable=1 stg_ptr=5 vlan_membership_bitmap=2    vrf=1
+
+# vlan_stg_table: index; keys: stg_ptr
+lt vlan_stg_table insert stg_ptr=5 stg_state=3
+
+# my_station_table: tcam; keys: macda | vid | port_num | src_modid
+lt my_station_table insert macda=0x110 macda_MASK=0xffffffffffff my_stn_routing_enable=1 port_num=0 port_num_MASK=0x7f src_modid=0x9 src_modid_MASK=0xff vid=1 vid_MASK=0xfff
+lt my_station_table insert macda=0x110 macda_MASK=0xffffffffffff my_stn_routing_enable=1 port_num=0 port_num_MASK=0x7f src_modid=0x9 src_modid_MASK=0xff vid=2 vid_MASK=0xfff
+lt my_station_table insert macda=0x110 macda_MASK=0xffffffffffff my_stn_routing_enable=0 port_num=5 port_num_MASK=0x7f src_modid=0x9 src_modid_MASK=0xff vid=1 vid_MASK=0xfff
+lt my_station_table insert macda=0x110 macda_MASK=0xffffffffffff my_stn_routing_enable=1 port_num=5 port_num_MASK=0x7f src_modid=0x9 src_modid_MASK=0xff vid=2 vid_MASK=0xfff
+
+# ipv6_host_table: hash; keys: da | vrf
+lt ipv6_host_table insert _KEY_TYPE=0 da=0x5        do_ecmp=1 ecmp_group_index=4 local_address=0 nhi_index=1 pri=7 rpe=1 vrf=1
+lt ipv6_host_table insert _KEY_TYPE=0 da=0xdeadbeef do_ecmp=0 ecmp_group_index=0 local_address=0 nhi_index=1 pri=7 rpe=1 vrf=1
+
+# l2_host_table: hash; keys: macda | vid
+lt l2_host_table insert _KEY_TYPE=0 dst_modid=0x5 dst_port=0xc  macda=0x400 mc_pkt=0 mgid=0 vid=0x1
+lt l2_host_table insert _KEY_TYPE=0 dst_modid=0x7 dst_port=0x12 macda=0x110 mc_pkt=0 mgid=0 vid=0x1
+lt l2_host_table insert _KEY_TYPE=0 dst_modid=0x6 dst_port=0xe  macda=0x110 mc_pkt=0 mgid=0 vid=0x2
+lt l2_host_table insert _KEY_TYPE=0 dst_modid=0x8 dst_port=0x14 macda=0x700 mc_pkt=1 mgid=5 vid=0x1
+
+# l2mc_table: index; keys: mgid
+lt l2mc_table insert mgid=0x5 l2mc_bitmap=0x1e
+
+# ecmp_group_table: index; keys: ecmp_idx
+lt ecmp_group_table insert ecmp_idx=4 base_nhi_index=0x8
+
+# ing_nhi_table: index; keys: nhi_index
+lt ing_nhi_table insert nhi_index=1    dst_modid=0x1 dst_port=0x2
+lt ing_nhi_table insert nhi_index=0x86 dst_modid=0x2 dst_port=0x3
+lt ing_nhi_table insert nhi_index=0x87 dst_modid=0x2 dst_port=0x4
+
+# egr_nhi_table: index; keys: nhi_index
+lt egr_nhi_table insert nhi_index=1    dst_mac_addr=0x101 encap_tunnel=0 ip_tunnel_table_index=0 l3_intf_num=1 update_vid=0 vid=0
+lt egr_nhi_table insert nhi_index=0x86 dst_mac_addr=0x102 encap_tunnel=0 ip_tunnel_table_index=0 l3_intf_num=2 update_vid=1 vid=0x6
+lt egr_nhi_table insert nhi_index=0x87 dst_mac_addr=0x162 encap_tunnel=0 ip_tunnel_table_index=0 l3_intf_num=3 update_vid=1 vid=0x6
+
+# egr_ipv6_tunnel_table: index; keys: ip_tunnel_table_index
+lt egr_ipv6_tunnel_table insert ip_tunnel_table_index=0 dst_ip_addr=0x400 protocol=0x4 src_ip_addr=0x600
+
+# egr_intf_table: index; keys: l3_intf_num
+lt egr_intf_table insert l3_intf_num=1 dec_ttl=0 new_ttl=0xc8 src_mac_addr=0x201
+lt egr_intf_table insert l3_intf_num=2 dec_ttl=1 new_ttl=0xc8 src_mac_addr=0x202
+lt egr_intf_table insert l3_intf_num=3 dec_ttl=1 new_ttl=0xc8 src_mac_addr=0x262
+
+# ipv6_tunnel_table: tcam; keys: sip | dip | next_header
+lt ipv6_tunnel_table insert dip=0x500 dip_MASK=0xffffffff next_header=0x4 next_header_MASK=0xff sip=0x300 sip_MASK=0xffffffff use_outer_ttl=0 valid=1
+
+# indicate ingress packets don't have crc
+pkt_has_crc 0
+
+# disable crc regeneration
+crc_gen_en 0
+

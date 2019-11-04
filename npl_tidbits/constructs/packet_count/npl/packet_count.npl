@@ -1,0 +1,103 @@
+
+/*
+*******************************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox for experimenting with 'packet count' construct
+**
+** Description:
+**   'Packet count' construct is used to count the packet.
+**   In this example, MC packets are counted by calling packet_count() construct
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+**   1. packet_drop()/packet_trace()/packet_count() construct is not allowed to be called in the 
+**     main program, but can be called in a function construct.
+**   2. There is no effect of calling packet_count() in current BM implementation. 
+**   3. MC traffic includes multicast and broadcast packets in this example.
+**
+** Verification method: 
+**   a. Send a UC packet from port-0 to BM
+**      Receive a packet from port-1
+**   b. Send a MC packet from port-0 to BM
+**      BM window prints out packet_count() construct is called.
+**      Receive a packet from port-1
+**
+********************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/*
+* Please refer to base_helper.npl for packet header definition and parsing
+*/
+
+/* Counter ID definition for MC traffic */
+#define PKT_COUNTER_ID__MC 0x00000001
+
+/* 
+* Local variables defined as a bus construct
+*/
+struct local_bus_t {
+    fields {
+        bit mc;
+    }
+}
+
+bus local_bus_t local_bus;
+
+
+/*
+ * Function construct
+ *   Counting MC packets
+ */
+function do_mc_pkt_count(){
+
+    local_bus.mc = ingress_pkt.group.ether.macda[40:40];
+
+    // update MC counter
+    if (local_bus.mc == 1) {
+        print ("Calling packet_count.\n");
+        packet_count (local_bus.mc, PKT_COUNTER_ID__MC);
+    }
+}
+
+/*************************************
+ * PROGRAM
+ *************************************/
+program pkt_count {
+
+    /* INPUT:
+     * BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    /* Ingress */
+    
+    /* Calling parser tree parsing from main program */
+    parse_begin(start);
+    
+    /* Note: packet_drop/ packet_count / packet_trace cannot be called in the main program */
+    /* Calling a function to perform mc packet count */
+    do_mc_pkt_count();
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+
+    /* OUTPUT:
+     * BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+
+}
+

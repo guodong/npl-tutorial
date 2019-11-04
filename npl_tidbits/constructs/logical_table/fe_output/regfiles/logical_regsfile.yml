@@ -1,0 +1,210 @@
+CHECKSUM: {}
+ENUM: {}
+FORMAT:
+    aux_bus_t:
+        DESC: ''
+        FIELDS:
+            drop_vector:
+                DESC: ''
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+    ccbe_t:
+        DESC: ''
+        FIELDS:
+            dst_port:
+                DESC: ''
+                MAXBIT: 6
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 7
+    ccbi_t:
+        DESC: ''
+        FIELDS:
+            l2_pbm:
+                DESC: ''
+                MAXBIT: 127
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 128
+            l3_pbm:
+                DESC: ''
+                MAXBIT: 255
+                MINBIT: 128
+                ORDER: 1
+                WIDTH: 128
+    control_id_t:
+        DESC: ''
+        FIELDS:
+            otpid_enable:
+                DESC: ''
+                MAXBIT: 3
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 4
+            ts_enable:
+                DESC: ''
+                MAXBIT: 4
+                MINBIT: 4
+                ORDER: 1
+                WIDTH: 1
+    egr_obj_bus_t:
+        DESC: ''
+        FIELDS:
+            dst_modid:
+                DESC: ''
+                MAXBIT: 7
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 8
+            dst_port:
+                DESC: ''
+                MAXBIT: 14
+                MINBIT: 8
+                ORDER: 1
+                WIDTH: 7
+            ing_port:
+                DESC: ''
+                MAXBIT: 21
+                MINBIT: 15
+                ORDER: 2
+                WIDTH: 7
+            ingress_timestamp:
+                DESC: ''
+                MAXBIT: 37
+                MINBIT: 22
+                ORDER: 3
+                WIDTH: 16
+    obj_bus_t:
+        DESC: ''
+        FIELDS:
+            drop_vector:
+                DESC: ''
+                MAXBIT: 179
+                MINBIT: 164
+                ORDER: 6
+                WIDTH: 16
+            dst_modid:
+                DESC: ''
+                MAXBIT: 16
+                MINBIT: 9
+                ORDER: 2
+                WIDTH: 8
+            dst_port:
+                DESC: ''
+                MAXBIT: 23
+                MINBIT: 17
+                ORDER: 3
+                WIDTH: 7
+            port_num:
+                DESC: ''
+                MAXBIT: 8
+                MINBIT: 2
+                ORDER: 1
+                WIDTH: 7
+            port_type_cfg:
+                DESC: ''
+                MAXBIT: 1
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 2
+            vid:
+                DESC: ''
+                MAXBIT: 35
+                MINBIT: 24
+                ORDER: 4
+                WIDTH: 12
+            vlan_membership_bitmap:
+                DESC: ''
+                MAXBIT: 163
+                MINBIT: 36
+                ORDER: 5
+                WIDTH: 128
+    time_bus_t:
+        DESC: ''
+        FIELDS:
+            currenttime:
+                DESC: ''
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+INSTANCE:
+    BUS:
+        ccbe: ccbe_t
+        ccbi: ccbi_t
+        control_id: control_id_t
+        egr_aux_bus: aux_bus_t
+        egr_obj_bus: egr_obj_bus_t
+        obj_bus: obj_bus_t
+        time_bus: time_bus_t
+    PACKET:
+        pkt: pkt_t
+NCS_SIGNATURE:
+    CHIP_ID: ''
+    CHIP_REV: ''
+    IDENTIFIER: 33557c36b849564d67f4447e12b47065
+    NCS_RUN_DATE_TIME: '2019-06-08 10:58:58.618333'
+    NCS_VERSION: 1.3.3rc4
+    NPL_APP: Default-App
+    NPL_APP_DESCRIPTION: Default Npl Application
+    NPL_APP_VERSION: '0.0'
+REGISTER: {}
+TABLE:
+    vlan_table:
+        DESC: ''
+        FIELDS:
+            _HIT_INDEX0:
+                DESC: |-
+                    HIT INDEX0 metadata
+                MAXBIT: 185
+                MINBIT: 154
+                ORDER: 5
+                TAG: metadata
+                WIDTH: 32
+            _INDEX:
+                DESC: |-
+                    Index
+                MAXBIT: 12
+                MINBIT: 1
+                ORDER: 1
+                TAG: index_
+                WIDTH: 12
+            _LOOKUP0:
+                DESC: |-
+                    LOOKUP0 metadata
+                MAXBIT: 153
+                MINBIT: 153
+                ORDER: 4
+                TAG: metadata
+                WIDTH: 1
+            _VALID:
+                DESC: |-
+                    VALID bit
+                MAXBIT: 0
+                MINBIT: 0
+                ORDER: 0
+                TAG: valid
+                WIDTH: 1
+            vid:
+                DESC: ''
+                MAXBIT: 24
+                MINBIT: 13
+                NPL_BASE_FIELD: 'vid'
+                ORDER: 2
+                TAG: key
+                WIDTH: 12
+            vlan_membership_bitmap:
+                DESC: ''
+                MAXBIT: 152
+                MINBIT: 25
+                ORDER: 3
+                TAG: data
+                WIDTH: 128
+        MAX_SIZE: 4096
+        MEM_TYPE: table
+        MIN_SIZE: 4096
+        OBJ_SOURCE: npl
+        TABLE_TYPE: INDEX
+UPDATE_PACKET_LENGTH: {}

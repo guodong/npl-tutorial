@@ -1,0 +1,331 @@
+
+/*
+*******************************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox for experimenting with 'strength' construct
+**
+** Description:
+**   Strength-based Mechanism is introduced to decide a winning object when multiple tables
+**     assign the same object.
+**   Strengths can be static (per table based) or dynamic (per entry based).
+**
+**   This example use vlan assignment to illustrate the use of static strengths.
+**   There are two sources to assign vlan int the example: port table & vlan_protocol_table.
+**   Each table has a static (fix) strength_index to lookup vlan_strength_profile_table. 
+**   Strength value of each source is obtained from vlan_strength_profile_table based on 
+**   the strength index. These values can be populated in the runtime. 
+**
+**   And the winning VID is resolved by the comparing strength values in 
+**     strength_resolution(). 
+**   BM window prints out the final value of vid.
+**     
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+**   1. In the latest NPL spec, a new foramt of strength_resolution() is introduced:
+**      strength_resolve ( destination bus.field, 
+**                 {table_lookup, user_defined_table_view_type, strength, source_field} 
+**                 ...
+**                 );
+**
+**   2. Strength_resolve() need to be called in the main program
+**
+** Verification method: 
+**   (a). Populate following tables with following entries
+**        >> port_table[0].default_vid=0xf   ; port default vlan is set to 0xf
+**        >> vlan_protocol_table[0].vid=0x1  ; vlan for SNAP packet is 0x1
+**        >> vlan_protocol_table[1].vid=0x2  ; vlan for LLC packet is 0x2
+**
+**   (b). Set the strength for port_table and vlan_protocol_table
+**        >> vlan_strength_profile_table[1].vlan_strength=1  ; port_table strength
+**        >> vlan_strength_profile_table[2].vlan_strength=2  ; vlan_protocol_table strength
+**        With this configuration, strength of vlan_protocol_table > port_table
+**    
+**   (c). Send a tagged packet from port-0 to BM.
+**        No vlan assignment is done for outer tagged packet, BM prints out the outer vid
+**        Receive packet from BM on port-1
+**
+**   (d). Send an untagged EtherII packet from port-0 to BM. 
+**        EtherII packets will not lookup vlan_protocol_table, vlan assignment is taken
+**          from port table, BM prints out the vid value 0xf
+**        Receive packet from BM on port-1
+**
+**   (e). Send an untagged LLC packet from port-0 to BM
+**        LLC packets will lookup vlan_protocol_table and port_table, since 
+**          vlan_protocol_table gets higher strength, vid is assigned as 0x2, BM prints 
+**          out the vid assignment value.
+**        Receive packet from BM on port-1
+**
+**   (f). Send an untagged SNAP packet from port-0 to BM
+**        SNAP packets will lookup vlan_protocol_table and port_table, since 
+**          vlan_protocol_table gets higher strength, vid is assigned as 0x1, BM prints 
+**          out the vid assignment value.
+**        Receive packet from BM on port-1
+**        
+*******************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/* Outer TPID definition */
+#define rTPID     0x8100
+
+/*
+* Packet format encodings
+*/
+
+#define PF_SNAP        0x0
+#define PF_LLC         0x1
+
+
+/*
+* Please refer to base_helper.npl for packet header definition
+*/
+
+
+/*
+* Local bus used as a local variable
+*/
+struct local_bus_t { 
+    fields {
+        bit[1]  pkt_protocol;
+        bit[12] vid;
+    }
+}
+
+bus local_bus_t local_bus;
+
+/*-----------------------------------------
+* Parser construct
+*---------------------------------------- */
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+// Ethernet header parsing
+parser_node ethernet{
+    extract_fields(ingress_pkt.group1.l2);
+    switch (latest.ethertype) {
+        rTPID             : next_node vlan_tag;
+        0x0000 mask 0xFC00: next_node snap_or_llc;
+        0x0400 mask 0xFE00: next_node snap_or_llc;
+        default           : next_node ingress;
+    } 
+}
+
+// VLAN tag parsing
+parser_node vlan_tag {
+    extract_fields(ingress_pkt.group1.vlan_tag);
+    switch(latest.ethertype) {
+        0x0000 mask 0xFC00: next_node snap_or_llc;
+        0x0400 mask 0xFE00: next_node snap_or_llc;
+        default           : next_node ingress;
+    }
+}
+
+// Snap or llc parsing
+parser_node snap_or_llc {
+    extract_fields(ingress_pkt.group1.snap_or_llc);
+    switch (latest.snap_llc) {
+        0xAAAA03000000   : next_node snap;
+        default          : next_node llc;
+    }
+}
+
+// Snap
+parser_node snap {
+    extract_fields(ingress_pkt.group1.snap);
+    next_node ingress;
+}
+
+// LLC
+parser_node llc {
+    extract_fields(ingress_pkt.group1.llc);
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+
+/*-----------------------------------------
+* Strength construct declaration
+*---------------------------------------- */
+struct vlan_strength_t {
+    fields {
+        bit[4] vlan_strength;
+    }
+}
+
+/* 
+* Initiate the vlan_strength_profile_table
+*   It can be populated in the runtime
+*/
+strength vlan_strength_t vlan_strength_profile_table;
+
+/*-----------------------------------------
+* Logical table : PORT table
+*   port default VLAN assigment
+*---------------------------------------- */
+logical_table port_table {
+
+    table_type : index;
+    minsize    : 128;
+    maxsize    : 128;
+
+    keys {
+        bit[PORT_NUM_WIDTH] port_num;
+    }
+
+    fields {
+        bit[12]  default_vid;
+    }
+
+    key_construct() {
+        port_num = obj_bus.port_num;
+    }
+    // Action to assign vid with strength
+    fields_assign() {
+        if(_LOOKUP0 == 1)
+        {
+            // Use “strength_profile_table” static index 1 to get strength value
+            use_strength (vlan_strength_profile_table, 1);  
+        }
+    }
+
+}
+
+/*-----------------------------------------
+* Logical table : vlan_protocol_table
+*   VLAN assignment based on packet protocol
+*   Only apply for SNAP & LLC packets 
+*---------------------------------------- */
+logical_table vlan_protocol_table {
+
+    table_type : index;
+    minsize    : 2;
+    maxsize    : 2;
+
+    keys {
+        bit  pkt_protocol;
+    }
+
+    fields {
+        bit[12]    vid;
+    }
+
+    key_construct() {
+        pkt_protocol = local_bus.pkt_protocol;
+    }
+
+    // Action to assign vid with strength
+    fields_assign() {
+        if(_LOOKUP0 == 1)
+        {
+            // Use “strength_profile_table” static index 2 to get strength value
+            use_strength (vlan_strength_profile_table, 2);
+        }
+    }
+
+}
+
+/*-----------------------------------------
+* Function construct
+*   Assign pt protocol with 
+*     pkt_format encodeings
+*---------------------------------------- */
+// Assign packet protocol with pkt_format encodeings
+function do_pkt_protocol_assignment () {
+     
+    if (ingress_pkt.group1.snap._PRESENT) {
+        local_bus.pkt_protocol = PF_SNAP;
+        print ("Ingress packet is a SNAP packet.\n");
+    } else if (ingress_pkt.group1.llc._PRESENT){
+        local_bus.pkt_protocol = PF_LLC;
+        print ("Ingress packet is a LLC packet.\n");
+    } else {
+        print ("Ingress packet is a ETHERII packet.\n");
+    }
+}
+
+
+/*************************************
+PROGRAM
+*************************************/
+program strength_vlan {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+    
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    if (ingress_pkt.group1.vlan_tag._PRESENT) {
+        // Tagged packet, no need to do vlan assignment
+        print ("Ingress packet is a outer tagged packet, vlan id = %d\n", ingress_pkt.group1.vlan_tag.vid);
+
+    } else {
+        // Untagged packet, do vlan assignment
+        print ("Ingress packet is an untagged packet.\n");
+
+        // Look up PORT table
+        port_table.lookup(0);
+
+        // Determine protocols before lookup
+        do_pkt_protocol_assignment();
+
+        /*
+         * If packet is snap or llc, look up vlan_protocol_table
+         *   EtherII pacekt will not lookup vlan_protocol_table
+         */
+        if ( ingress_pkt.group1.snap._PRESENT || 
+               ingress_pkt.group1.llc._PRESENT) {
+            
+            vlan_protocol_table.lookup(0);
+        }
+
+        /*
+         * Strength resolution function
+         *   There are 2 strength sources for strength resoluion:
+         *     a. port_table 
+         *     b. vlan_protocol_table
+         *   These two tables have fixed index into vlan_strength_profile_table
+         *   Strength resolution is based on the entry values of vlan_strength_profile_table
+         */
+         strength_resolve( local_bus.vid, // field taking the assignment
+                NULL,
+                { port_table._LOOKUP0, NULL, vlan_strength_profile_table.vlan_strength, port_table.default_vid},
+                { vlan_protocol_table._LOOKUP0, NULL, vlan_strength_profile_table.vlan_strength, vlan_protocol_table.vid} );
+                
+
+        // vlan assigment result 
+        print ("Vlan assigment is done, vid = %d \n", local_bus.vid);
+    }
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU Special Function*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

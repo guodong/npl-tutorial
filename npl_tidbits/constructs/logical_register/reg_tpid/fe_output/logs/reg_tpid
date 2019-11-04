@@ -1,0 +1,263 @@
+# 1 "npl/reg_tpid.npl"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 1 "<command-line>" 2
+# 1 "npl/reg_tpid.npl"
+# 33 "npl/reg_tpid.npl"
+# 1 "npl/base_helper.npl" 1
+# 39 "npl/base_helper.npl"
+struct ethernet_t {
+    fields {
+        bit[48] macda;
+        bit[48] macsa;
+        bit[16] ether_type;
+    }
+}
+
+struct vlan_t {
+    fields {
+        bit[3] pcp;
+        bit cfi;
+        bit[12] vid;
+        bit[16] ether_type;
+    }
+}
+
+struct grp_t {
+    fields {
+        ethernet_t ether;
+        vlan_t vlan;
+    }
+}
+
+struct ingress_pkt_t {
+    fields {
+        grp_t group;
+    }
+}
+
+packet ingress_pkt_t ingress_pkt;
+
+struct obj_bus_t {
+    fields {
+        bit[2] port_type_cfg;
+        bit[7] port_num;
+        bit[8] dst_modid;
+        bit[7] dst_port;
+    }
+}
+
+
+struct ccbi_t {
+    fields {
+        bit[128] l2_pbm;
+        bit[128] l3_pbm;
+    }
+}
+
+struct ccbe_t {
+    fields {
+        bit[7] dst_port;
+    }
+}
+
+struct control_id_t {
+    fields {
+        bit[4] otpid_enable;
+        bit ts_enable;
+    }
+}
+
+struct time_bus_t {
+    fields {
+        bit[16] currenttime;
+    }
+}
+
+struct egr_obj_bus_t {
+    fields {
+        bit[8] dst_modid;
+        bit[7] dst_port;
+        bit[7] ing_port;
+        bit[16] ingress_timestamp;
+    }
+}
+
+struct aux_bus_t {
+    fields {
+        bit [16] drop_vector;
+    }
+}
+
+bus obj_bus_t obj_bus;
+bus ccbi_t ccbi;
+bus ccbe_t ccbe;
+bus control_id_t control_id;
+bus time_bus_t time_bus;
+bus egr_obj_bus_t egr_obj_bus;
+bus aux_bus_t egr_aux_bus;
+
+
+
+special_function iarb {
+
+    usage_mode_create(in const eindex,
+               out bit[4] otpid_enable,
+               out bit[1] ts_enable,
+               out bit[7] port_num,
+               out bit[2] port_type_cfg,
+               out bit[16] currenttime
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+special_function mmu {
+
+    usage_mode_create(in const eindex,
+               in bit[128] l2_pbm,
+               in bit[128] l3_pbm,
+               out bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+
+special_function edb {
+
+    usage_mode_create(in const eindex,
+               in bit[16] drop_vector,
+               in bit[8] dst_mod,
+               in bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+function base_assign_destination() {
+    ccbi.l3_pbm = 0;
+    ccbe.dst_port = 0;
+    ccbi.l2_pbm = 0x2;
+}
+
+function base_egress() {
+    egr_aux_bus.drop_vector = 0;
+    egr_obj_bus.dst_modid = 0;
+    egr_obj_bus.dst_port = ccbe.dst_port;
+}
+# 34 "npl/reg_tpid.npl" 2
+
+
+
+
+
+
+logical_register tpid_enable {
+    fields {
+        bit[4] reg_val = 0x7;
+    }
+}
+
+
+logical_register tpid_values{
+    fields {
+        bit[16] tpid0 = 0x8100;
+        bit[16] tpid1 = 0x9100;
+        bit[16] tpid2 = 0x88a8;
+        bit[16] tpid3 = 0x0;
+    }
+}
+
+
+
+struct local_bus_t {
+    fields {
+        bit tagged;
+        bit[12] vid;
+    }
+}
+
+bus local_bus_t local_bus;
+# 74 "npl/reg_tpid.npl"
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+
+
+
+parser_node ethernet {
+    extract_fields(ingress_pkt.group.ether);
+    local_bus.tagged = 0x0;
+
+    if ((tpid_enable.reg_val & 0x1) && (latest.ether_type == tpid_values.tpid0)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x2) && (latest.ether_type == tpid_values.tpid1)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x4) && (latest.ether_type == tpid_values.tpid2)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+    if ((tpid_enable.reg_val & 0x8) && (latest.ether_type == tpid_values.tpid3)){
+        local_bus.tagged = 0x1;
+        next_node vlan_tag;
+    }
+
+    next_node ingress;
+}
+
+parser_node vlan_tag {
+    extract_fields(ingress_pkt.group.vlan);
+    local_bus.vid = ingress_pkt.group.vlan.vid;
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+
+
+
+program reg_tpid {
+
+
+
+    iarb.usage_mode_create( 0, control_id.otpid_enable, control_id.ts_enable, obj_bus.port_num, obj_bus.port_type_cfg, time_bus.currenttime ); iarb.execute();
+
+
+
+
+
+    parse_begin(start);
+
+
+    if (ingress_pkt.group.vlan._PRESENT) {
+        print ("It is a tagged packet, VLAN ID = %d\n", local_bus.vid);
+    } else {
+        print ("It is a untagged packet.\n");
+    }
+
+
+
+    base_assign_destination();
+    mmu.usage_mode_create( 0, ccbi.l2_pbm, ccbi.l3_pbm, ccbe.dst_port ); mmu.execute();
+
+
+    base_egress();
+
+
+
+
+    edb.usage_mode_create( 0, egr_aux_bus.drop_vector, egr_obj_bus.dst_modid, egr_obj_bus.dst_port ); edb.execute();
+}

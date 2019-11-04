@@ -1,0 +1,265 @@
+sc_main() enter
+Looking up sfc_iarb_profile
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 0
+0x00000000 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 1
+0x00000482 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 2
+0x00000904 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 3
+0x00000d86 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 4
+0x00001208 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 5
+0x0000168a 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 6
+0x00001b0c 
+ngsdk_p2l_set sid: 3 buf_len: 2, typ 0, index: 7
+0x00001f8e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 0
+0x00000000 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 1
+0x00000002 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 2
+0x00000004 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 3
+0x00000006 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 4
+0x00000008 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 5
+0x0000000a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 6
+0x0000000c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 7
+0x0000000e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 8
+0x00012010 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 9
+0x00012012 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 10
+0x00012014 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 11
+0x00012016 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 12
+0x00012018 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 13
+0x0001201a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 14
+0x0001201c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 15
+0x0001201e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 16
+0x00024020 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 17
+0x00024022 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 18
+0x00024024 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 19
+0x00024026 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 20
+0x00024028 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 21
+0x0002402a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 22
+0x0002402c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 23
+0x0002402e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 24
+0x00036030 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 25
+0x00036032 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 26
+0x00036034 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 27
+0x00036036 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 28
+0x00036038 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 29
+0x0003603a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 30
+0x0003603c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 31
+0x0003603e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 32
+0x00048040 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 33
+0x00048042 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 34
+0x00048044 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 35
+0x00048046 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 36
+0x00048048 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 37
+0x0004804a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 38
+0x0004804c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 39
+0x0004804e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 40
+0x0005a050 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 41
+0x0005a052 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 42
+0x0005a054 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 43
+0x0005a056 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 44
+0x0005a058 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 45
+0x0005a05a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 46
+0x0005a05c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 47
+0x0005a05e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 48
+0x0006c060 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 49
+0x0006c062 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 50
+0x0006c064 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 51
+0x0006c066 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 52
+0x0006c068 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 53
+0x0006c06a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 54
+0x0006c06c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 55
+0x0006c06e 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 56
+0x0007e070 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 57
+0x0007e072 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 58
+0x0007e074 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 59
+0x0007e076 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 60
+0x0007e078 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 61
+0x0007e07a 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 62
+0x0007e07c 
+ngsdk_p2l_set sid: 2 buf_len: 3, typ 0, index: 63
+0x0007e07e 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 0
+0x00000000 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 1
+0x00000082 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 2
+0x00000104 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 3
+0x00000186 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 4
+0x00000208 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 5
+0x0000028a 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 6
+0x0000030c 
+ngsdk_p2l_set sid: 1 buf_len: 2, typ 0, index: 7
+0x0000038e 
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 7a 98 00 00     ..E..Z....@.z...
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 76 7a  00 00 54 68 69 73 20 70     ..P. .vz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up pri_cos_mapping_table
+Looking up dscp_cos_mapping_table
+Looking up cos_strength_profile_table
+Looking up cos_strength_profile_table
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(1), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 00 01     ................
+0010:  08 00 45 00 00 5a 00 01  00 00 40 06 7a 98 00 00     ..E..Z....@.z...
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 76 7a  00 00 54 68 69 73 20 70     ..P. .vz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 31 20 66 72     ent by test 1 fr
+0060:  6f 6d 20 43 4c 49 20 74  4c fa 07 55                 om CLI tL..U
+Receiving packet from BM
+Dst Port = 1
+Dst Modid = 0
+bmi_tx_pkt, itm (0x1), etm(0x59)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 60 01     ..............`.
+0010:  08 00 45 20 00 5a 00 01  00 00 40 06 7a 78 00 00     ..E .Z....@.zx..
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 75 7a  00 00 54 68 69 73 20 70     ..P. .uz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 32 20 66 72     ent by test 2 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up pri_cos_mapping_table
+Looking up dscp_cos_mapping_table
+Looking up cos_strength_profile_table
+Looking up cos_strength_profile_table
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(1), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 60 01     ..............`.
+0010:  08 00 45 20 00 5a 00 01  00 00 40 06 7a 78 00 00     ..E .Z....@.zx..
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 75 7a  00 00 54 68 69 73 20 70     ..P. .uz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 32 20 66 72     ent by test 2 fr
+0060:  6f 6d 20 43 4c 49 20 74  44 d0 8a a6                 om CLI tD...
+Receiving packet from BM
+Dst Port = 1
+Dst Modid = 0
+bmi_tx_pkt, itm (0x2), etm(0x11)
+*************** Transmit Packet to Port ***************
+Sending packet into BM (Src Port = 0)
+Ingress Packet, port(0), len(108)
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 60 01     ..............`.
+0010:  08 00 45 a0 00 5a 00 01  00 00 40 06 79 f8 00 00     ..E..Z....@.y...
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 74 7a  00 00 54 68 69 73 20 70     ..P. .tz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 33 20 66 72     ent by test 3 fr
+0060:  6f 6d 20 43 4c 49 20 74  6f 20 42 4d                 om CLI to BM
+bm_debug_lvl = 4
+###### Starting Ingress Pipeline Processing ######
+Looking up sfc_iarb_profile
+Looking up pri_cos_mapping_table
+Looking up dscp_cos_mapping_table
+Looking up cos_strength_profile_table
+Looking up cos_strength_profile_table
+Looking up sfc_mmu_profile
+##### Starting Egress Pipeline Processing #####
+Looking up sfc_mmu_profile
+Looking up sfc_edb_profile
+Egress Packet, port(1), len(108):
+
+0000:  00 00 00 00 01 10 00 00  00 00 02 00 81 00 60 01     ..............`.
+0010:  08 00 45 a0 00 5a 00 01  00 00 40 06 79 f8 00 00     ..E..Z....@.y...
+0020:  00 02 00 00 00 04 00 14  00 50 00 00 00 00 00 00     .........P......
+0030:  00 00 50 02 20 00 74 7a  00 00 54 68 69 73 20 70     ..P. .tz..This p
+0040:  61 63 6b 65 74 20 69 73  20 62 65 69 6e 67 20 73     acket is being s
+0050:  65 6e 74 20 62 79 20 74  65 73 74 20 33 20 66 72     ent by test 3 fr
+0060:  6f 6d 20 43 4c 49 20 74  13 70 0e ae                 om CLI t.p..
+Receiving packet from BM
+Dst Port = 1
+Dst Modid = 0

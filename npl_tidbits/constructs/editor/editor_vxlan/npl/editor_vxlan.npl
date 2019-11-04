@@ -1,0 +1,228 @@
+/*
+********************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox to experiment packet editing constructs
+**   of NPL.
+**
+** Description:
+**   Editor constructs help in modify packets. Functions include
+**     add/remove/replace egress packet headers, update checksum, and
+**     update packet length.
+**   This example manipulates packets with VxLAN encapsulation/decapsulation. 
+**   Packet modification logic is:
+**     a. If the incoming packet is a VxLAN packet, VxLAN header is removed by 
+**        using 'delete_header' function of editor construct.
+**     b. If the incoming packet is a non-VxLAN packet, VxLAN header is added 
+**        by calling  'add_header'. After adding VxLAN header packet length is 
+**        updated by calling 'update_packet_length' and checksum is regenerated 
+**        by calling 'create_checksum'
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes: 
+**   1. Editor constructs must be called from functions.
+**
+** Verification method: 
+**   a. Send a non-VxLAN packet from port-0 to BM.
+**      BM window shows packet is non-VxLAN packet and program does
+**      VxLAN encapsulation.
+**      Received packet is a VxLAN packet, VxLAN header is added.
+
+**   b. Send a VxLAN packet from port-0 to BM.
+**      BM window shows packet is VxLAN packet and program does decapsulation.
+**      Received packet is a non-VxLAN packet, VxLAN header is removed.
+**
+********************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/* VxLAN UDP port definition */
+#define rVXLAN_UDP_PORT    4789
+
+/*
+* Please refer to base_helper.npl for packet header definition
+*/
+
+/*-----------------------------------------
+* Parser construct
+*---------------------------------------- */
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+// Ethernet header parsing
+parser_node ethernet{
+    extract_fields(ingress_pkt.group1.l2);
+    switch (latest.ethertype) {
+        0x0800  : next_node ipv4;
+        default : next_node ingress;
+    }
+}
+
+// IPv4 header parsing
+parser_node ipv4{
+    extract_fields(ingress_pkt.group2.ipv4);
+    switch (latest.protocol) {
+        0x11    : next_node udp;
+        default : next_node ingress;
+    }
+}
+
+// UDP header parsing
+parser_node udp {
+    extract_fields(ingress_pkt.group2.udp);
+    switch(latest.dst_port) {
+        rVXLAN_UDP_PORT : next_node vxlan;    
+        default         : next_node ingress;
+    }
+}
+
+// VxLAN header parsing
+parser_node vxlan {
+    extract_fields(ingress_pkt.group2.vxlan);
+    next_node inner_l2;
+}
+
+// Inner l2 header parsing
+parser_node inner_l2 {
+    extract_fields(ingress_pkt.group3.l2);
+    switch (latest.ethertype) {
+        0x0800 : next_node inner_ipv4;
+        default: next_node ingress;
+    }
+}
+
+// Inner IPv4 header parsing
+parser_node inner_ipv4 {
+    extract_fields(ingress_pkt.group4.ipv4);
+    next_node  ingress;
+}
+
+parser_node ingress {
+    end_node: 1;
+}
+
+/* --------------------------------------------
+* Funtion constructs
+*   Switch logic to do packet modifications:
+*     Add VxLAN header for non-VxLAN packets.
+*     Remove VxLAN header for VxLAN packets.
+* --------------------------------------------*/
+function do_egress_pkt_modify()
+{
+    if (ingress_pkt.group2.vxlan._PRESENT) {
+        /* VxLAN packet, do decapsulation */
+        print ("VxLAN packet, do decapsulation\n");
+
+        // egress_pkt header assignment.
+        egress_pkt.group1.l2 = ingress_pkt.group1.l2;
+        egress_pkt.group2.ipv4 = ingress_pkt.group2.ipv4;
+        egress_pkt.group2.udp = ingress_pkt.group2.udp;
+        egress_pkt.group2.vxlan = ingress_pkt.group2.vxlan;
+        egress_pkt.group3.l2 = ingress_pkt.group3.l2;
+        egress_pkt.group4.ipv4 = ingress_pkt.group4.ipv4;
+
+        // editor function: delete outer VxLAN header of egress packet.
+        delete_header(egress_pkt.group1.l2);
+        delete_header(egress_pkt.group2.ipv4);
+        delete_header(egress_pkt.group2.udp);
+        delete_header(egress_pkt.group2.vxlan);
+
+    } else {
+        /* Non-VxLAN packet, do encapsulation */
+        print ("Non-VxLAN packet, do VxLAN encapsulation\n");
+
+        // egress_pkt header assignment
+        // Outer L2 header
+        egress_pkt.group1.l2.macda = 0x0000000000bb;
+        egress_pkt.group1.l2.macsa = 0x0000000000aa;
+        egress_pkt.group1.l2.ethertype = 0x0800;
+        // Outer ipv4 header
+        egress_pkt.group2.ipv4.version = 0x4;
+        egress_pkt.group2.ipv4.hdr_len = 0x5;
+        egress_pkt.group2.ipv4.sip = 0x01010101;
+        egress_pkt.group2.ipv4.dip = 0x02020202;
+        egress_pkt.group2.ipv4.ttl = 0x40;
+        egress_pkt.group2.ipv4.protocol = 0x11; /* UDP */
+        // Outer udp header
+        egress_pkt.group2.udp.src_port = 0x1234;
+        egress_pkt.group2.udp.dst_port = rVXLAN_UDP_PORT;
+        // Outer VxLAN header
+        egress_pkt.group2.vxlan.f_flag1 = 0xf;
+        egress_pkt.group2.vxlan.i_flag = 1;
+        egress_pkt.group2.vxlan.f_flag2 = 0x7;
+        egress_pkt.group2.vxlan.vn_id = 0xf;
+
+        // Inner l2 header
+        egress_pkt.group3.l2 = ingress_pkt.group1.l2;
+        // Inner ip header
+        egress_pkt.group4.ipv4 = ingress_pkt.group2.ipv4;
+        
+        // editor function: add packet headers
+        add_header (egress_pkt.group1.l2);
+        add_header (egress_pkt.group2.ipv4);
+        add_header (egress_pkt.group2.udp);
+        add_header (egress_pkt.group2.vxlan);
+
+        // editor function: update header length
+        update_packet_length(egress_pkt.group2.ipv4.v4_length, 1, 0);
+        update_packet_length(egress_pkt.group2.udp.udp_length, 0, 0);
+        
+        // editor function: update header checksum
+         create_checksum(egress_pkt.group2.ipv4.hdr_checksum, {egress_pkt.group2.ipv4.version,
+                         egress_pkt.group2.ipv4.hdr_len, egress_pkt.group2.ipv4.tos,
+                         egress_pkt.group2.ipv4.v4_length, egress_pkt.group2.ipv4.id,
+                         egress_pkt.group2.ipv4.flags, egress_pkt.group2.ipv4.frag_offset,
+                         egress_pkt.group2.ipv4.ttl, egress_pkt.group2.ipv4.protocol,
+                         egress_pkt.group2.ipv4.sip, egress_pkt.group2.ipv4.dip});
+        
+    }
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program editor_vxlan {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    if (ingress_pkt.group2.vxlan._PRESENT) {
+        print ("Ingress packet is a VxLAN packet. \n");
+    } else {
+        print ("Ingress packet is a non-VxLAN packet. \n");
+    }
+
+    //MMU
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling VxLAN ecapsulation/decapsulation function
+    do_egress_pkt_modify();
+
+    // OUTPUT
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

@@ -1,0 +1,135 @@
+
+/*
+********************************************************************************************
+* Purpose:
+*   To demonstrate & provide sandbox for experimenting with 'logical_table' construct. 
+*
+* Description:
+*   The logical_table construct is used to specify lookup tables in NPL program.
+*   In this example, we are using logical_table with type as Index.
+*   VLAN_TABLE used in this example is indexed using vlan_id of packet & determines
+*     list of ports that incoming packet can be forwarded. 
+*
+* Topology diagram:
+*         +-----+
+*    +--> |0   2+--->
+*         |     |
+*         |     |
+*         |    3+--->
+*         +-----+
+*   
+* Configuration:
+*   Create VLAN-2 with Ports {0,2} as members.
+*   Create VLAN-3 with Ports {0,3} as members.
+*
+* Verification method: 
+*    (a). Populate VLAN_TABLE with following enrtries.
+*         -> vlan_table[entry-2].vlan_membership_bitmap = {ports-0,2}
+*            (bmcli.0> lt vlan_table insert _INDEX=2 vlan_membership_bitmap=0x5)
+*         -> vlan_table[entry-3].vlan_membership_bitmap = {ports-0,3}
+*            (bmcli.0> lt vlan_table insert _INDEX=3 vlan_membership_bitmap=0x9)
+*    (b). Send vlan-2 packet from port-0 and check packet received back on port-2.
+*    (c). Send vlan-3 packet from port-0 and check packet received back on port-3.
+* Notes: 
+********************************************************************************************
+*/
+
+#include "base_helper.npl"
+
+/* PACKET-HEADERS definition is present in base_helper.npl */
+
+/********************
+LOGICAL_TABLE:
+   VLAN TABLE
+********************/
+logical_table vlan_table {
+
+  table_type : index;
+  minsize    : 4096;
+  maxsize    : 4096;
+
+  keys {
+      bit[12] vid;
+  }
+
+  fields {
+      bit[128] vlan_membership_bitmap;
+  }
+
+  key_construct() {
+      vid = obj_bus.vid;
+  }
+
+  fields_assign(){
+      if (_LOOKUP0 == 1) {
+          obj_bus.vlan_membership_bitmap = vlan_membership_bitmap;
+      }
+  }
+}
+
+
+/* vlan assignment for flow */ 
+function vlan_assign() {
+  if(pkt.grp.vlan_tag._PRESENT)
+  {
+     print("VLAN TAG present in incoming packet. VLAN:%d\n", pkt.grp.vlan_tag.vid);
+     obj_bus.vid = pkt.grp.vlan_tag.vid;
+  }
+  else
+  {
+     print("VLAN TAG not present in incoming packet.\n");
+     obj_bus.vid = 1; /* default assignment */
+  }
+}
+
+/* derive destination ports for flow */
+function assign_destination() {
+  ccbi.l3_pbm = 0;
+  ccbi.l2_pbm = obj_bus.vlan_membership_bitmap;
+
+  if(obj_bus.vlan_membership_bitmap != 0) {
+    /* remove incoming port from destination-list */
+    ccbi.l2_pbm = obj_bus.vlan_membership_bitmap & (~(1<<(obj_bus.port_num)));
+    obj_bus.drop_vector = 0;
+  }
+  else {
+    /* asserting drop condition */
+    obj_bus.drop_vector = 1;
+  }
+
+  obj_bus.dst_modid = 0;
+}
+
+/*************************************
+PROGRAM
+*************************************/
+program logical_tbl {
+
+  /* INPUT:
+   * BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+  BASE_INPUT;
+
+  /**** Ingress *****/
+
+  /* Calling parser tree parsing from main program */
+  parse_begin(start);
+
+  /* trigger vlan_table lookup */
+  vlan_assign(); 
+  vlan_table.lookup(0);
+
+  /* Assign destination ports */
+  assign_destination();
+
+  /* MMU: */
+  BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+  /**** Egress *****/
+  base_egress();
+
+  /* OUTPUT:
+   * BASE_OUTPUT macro implements standard output to BMI from program */
+  BASE_OUTPUT;
+
+}
+

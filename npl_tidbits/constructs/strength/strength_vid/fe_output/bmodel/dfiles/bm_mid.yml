@@ -1,0 +1,49 @@
+---
+'MATCH_ID':
+    'ingress_pkt':
+        'ingress_pkt.group1':
+            'ingress_pkt.group1.l2':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '1'
+                'FULL_MATCH_MASK': !!int '1'
+                'FULL_MATCH_MAXBIT': !!int '4'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '0'
+                'MINBIT': !!int '0'
+                'VALUE': !!int '1'
+            'ingress_pkt.group1.llc':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '16'
+                'FULL_MATCH_MASK': !!int '24'
+                'FULL_MATCH_MAXBIT': !!int '4'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '4'
+                'MINBIT': !!int '3'
+                'VALUE': !!int '2'
+            'ingress_pkt.group1.snap':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '8'
+                'FULL_MATCH_MASK': !!int '24'
+                'FULL_MATCH_MAXBIT': !!int '4'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '4'
+                'MINBIT': !!int '3'
+                'VALUE': !!int '1'
+            'ingress_pkt.group1.snap_or_llc':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '2'
+                'FULL_MATCH_MASK': !!int '2'
+                'FULL_MATCH_MAXBIT': !!int '4'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '1'
+                'MINBIT': !!int '1'
+                'VALUE': !!int '1'
+            'ingress_pkt.group1.vlan_tag':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '4'
+                'FULL_MATCH_MASK': !!int '4'
+                'FULL_MATCH_MAXBIT': !!int '4'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '2'
+                'MINBIT': !!int '2'
+                'VALUE': !!int '1'

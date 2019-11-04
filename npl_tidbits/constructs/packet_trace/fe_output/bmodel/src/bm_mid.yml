@@ -1,0 +1,22 @@
+---
+'MATCH_ID':
+    'ingress_pkt':
+        'ingress_pkt.group':
+            'ingress_pkt.group.ether':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '1'
+                'FULL_MATCH_MASK': !!int '1'
+                'FULL_MATCH_MAXBIT': !!int '1'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '0'
+                'MINBIT': !!int '0'
+                'VALUE': !!int '1'
+            'ingress_pkt.group.ipv4':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '2'
+                'FULL_MATCH_MASK': !!int '2'
+                'FULL_MATCH_MAXBIT': !!int '1'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '1'
+                'MINBIT': !!int '1'
+                'VALUE': !!int '1'

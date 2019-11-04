@@ -1,0 +1,15 @@
+#####################################################################
+#
+# Purpose:
+#   Configuration needed for 'logical table' example.
+#
+# Steps:
+#  Populate VLAN_TABLE with following enrtries.
+#    -> vlan_table[entry-2].vlan_membership_bitmap = {ports-0,2}
+#    -> vlan_table[entry-3].vlan_membership_bitmap = {ports-0,3}
+#
+#####################################################################
+
+lt vlan_table insert _INDEX=2 vlan_membership_bitmap=0x5
+lt vlan_table insert _INDEX=3 vlan_membership_bitmap=0x9
+

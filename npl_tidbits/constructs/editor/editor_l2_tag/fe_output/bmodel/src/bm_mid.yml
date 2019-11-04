@@ -1,0 +1,60 @@
+---
+'MATCH_ID':
+    'egress_pkt':
+        'egress_pkt.grp':
+            'egress_pkt.grp.inner_tag':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '2'
+                'FULL_MATCH_MASK': !!int '2'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '1'
+                'MINBIT': !!int '1'
+                'VALUE': !!int '1'
+            'egress_pkt.grp.l2':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '1'
+                'FULL_MATCH_MASK': !!int '1'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '0'
+                'MINBIT': !!int '0'
+                'VALUE': !!int '1'
+            'egress_pkt.grp.outer_tag':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '4'
+                'FULL_MATCH_MASK': !!int '4'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '2'
+                'MINBIT': !!int '2'
+                'VALUE': !!int '1'
+    'ingress_pkt':
+        'ingress_pkt.grp':
+            'ingress_pkt.grp.inner_tag':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '2'
+                'FULL_MATCH_MASK': !!int '2'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '1'
+                'MINBIT': !!int '1'
+                'VALUE': !!int '1'
+            'ingress_pkt.grp.l2':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '1'
+                'FULL_MATCH_MASK': !!int '1'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '0'
+                'MINBIT': !!int '0'
+                'VALUE': !!int '1'
+            'ingress_pkt.grp.outer_tag':
+                'FULL_MASK': !!int '0'
+                'FULL_MATCH': !!int '4'
+                'FULL_MATCH_MASK': !!int '4'
+                'FULL_MATCH_MAXBIT': !!int '2'
+                'FULL_MATCH_MINBIT': !!int '0'
+                'MAXBIT': !!int '2'
+                'MINBIT': !!int '2'
+                'VALUE': !!int '1'

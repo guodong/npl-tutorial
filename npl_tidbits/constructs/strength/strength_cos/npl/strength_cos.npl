@@ -1,0 +1,305 @@
+
+/*
+*******************************************************************************************
+** Purpose: 
+** =======
+**   To demonstrate & provide sandbox for experimenting with 'strength' construct
+**
+** Description:
+** ============
+**   Strength-based Mechanism is introduced to decide a winning object when multiple tables
+**     assign the same object.
+**   Strengths can be static (per table based) or dynamic (per entry based).
+**
+**   This example illustrate the use of dynamic strengths assignment by cos assignment. 
+**   Below are the detailed step-by-step process for resolving strength. 
+**   1. There are 3 sources for cos assignment:
+**     a. pri_cos_mapping_table for tagged packets
+**     b. dscp_cos_mapping_table for ipv4 packets
+**     c. local_bus as default cos
+**   2. Strength_index are obtained by lookup result of pri_cos_mapping_table & 
+**     dscp_cos_mapping_table, each entry of these tables can assign different value of
+**     strength_index (dynamic).
+**   3. Local_bus provides fixed strength_index as default strength_index.
+**   4. These strength_index values are used to index cos_strength_profile_table to get the 
+**     exact strength value of the object. 
+**   5. The strength of each entry in cos_strength_profile_table can be populated in runtime.
+**
+**   6. Then, strength_resolution() resolves the winning object and output the final cos 
+**     value to local_bus.cos. 
+**   7. BM window prints out the final value of local_bus.cos.
+**     
+**
+** Topology diagram:
+** ================
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes: 
+**   1. In the latest NPL spec, a new foramt of strength_resolution() is introduced:
+**      strength_resolve ( destination bus.field, 
+**                 {table_lookup, user_defined_table_view_type, strength, source_field} 
+**                 ...
+**                 );
+**
+**   2. Strength_resolve() need to be called in the main program
+** 
+** Verification method in detailed Step-by-step
+** ============================================
+**   1. Populate pri_cos_mapping_table with following pattern
+**        >> pri_cos_mapping_table[i].cos = i,  cos_strength_index = i
+**
+**   2. Populate dscp_cos_mapping_table with following pattern
+**        >> dscp_cos_mapping_table[0,..,7].cos = 0, cos_strength_index = 0
+**        >> dscp_cos_mapping_table[8,..,15].cos = 1, cos_strength_index = 1
+**           ......
+**        >> dscp_cos_mapping_table[56,..,63].cos = 7, cos_strength_index = 7
+**
+**   3. Populate cos_strength_profile_table with following pattern. This is for actual strength value.
+**        >> cos_strength_profile_table[i].cos_strength = i
+**
+**   4. Send a packet with pri = 0, dscp = 0 from port-0 to BM
+**        Strength of pri_cos_mapping_table and dscp_cos_mapping_table are 0, while
+**          strength of local_bus.cos is 1, the winning object is local_bus.cos, print out
+**          cos value in BM window
+**        Receive packet from BM
+**
+**   5. Send a packet with pri = 3, dscp = 8 from port-0 to BM
+**        Strength of pri_cos_mapping_table is 3, strength of dscp_cos_mapping_table is 1,
+**          strength of local_bus.cos is 1. The winning object is pri_cos_mapping_table,
+**          cos value is 3, print out the cos value in BM window
+**        Receive packet from BM
+**
+**   6. Send a packet with pri = 3, dscp = 40 from port-0 to BM
+**        Strength of pri_cos_mapping_table is 3, strength of dscp_cos_mapping_table is 5,
+**          strength of local_bus.cos is 1. The winning object is dscp_cos_mapping_table,
+**          cos value is 5, print out the cos value in BM window
+**        Receive packet from BM
+**
+*******************************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/* TPID definition for vlan tag parsing */
+#define rTPID      0x8100
+
+/*
+* Please refer to base_helper.npl for packet header definition
+*/
+
+/*
+* Local bus used as a local variable
+*/
+struct local_bus_t {  
+    fields {
+        bit[3]  vlan_pri;
+        bit[6]  dscp;
+        bit[3]  cos;                 
+        bit[4]  cos_strength;  // default cos_strength.
+    }
+}
+
+bus local_bus_t local_bus;
+
+/*-----------------------------------------
+* Parser construct
+*---------------------------------------- */
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+// Ethernet header parsing
+parser_node ethernet{
+    extract_fields(ingress_pkt.group1.l2);
+    switch (latest.ethertype) {
+        rTPID  : next_node vlan_tag;
+        0x0800 : next_node ipv4;
+        default: next_node ingress;
+    }
+}
+
+// VLAN tag parsing
+parser_node vlan_tag {
+    extract_fields(ingress_pkt.group1.vlan_tag);
+    /* Assigne local bus value in parser construct */
+    local_bus.vlan_pri = ingress_pkt.group1.vlan_tag.pcp;
+    switch (latest.ethertype) {
+        0x0800 : next_node ipv4;
+        default: next_node ingress;
+    }
+}
+
+// IPv4 header parsing
+parser_node ipv4{
+    extract_fields(ingress_pkt.group2.ipv4);
+    /* Assigne local bus value in parser construct */
+    local_bus.dscp = ingress_pkt.group2.ipv4.tos[7:2];
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+
+/*-----------------------------------------
+* Logical table : pri_cos_mapping_table
+*   Mapping vlan priority to cos 
+*---------------------------------------- */
+logical_table pri_cos_mapping_table {
+    
+    table_type : index;
+    minsize    : 8;
+    maxsize    : 8;
+
+    keys {
+        bit[3] vlan_pri;
+    }
+
+    fields {
+        bit[3]  cos_strength_index;  // Specify cos_strength_index per entry
+        bit[3]  cos;
+    }
+
+    key_construct() {
+        vlan_pri = local_bus.vlan_pri;
+    }
+
+    // Action to assign strength_index
+    fields_assign() {
+        if(_LOOKUP0 == 1)
+        {
+            // Specify the dynamic index into cos_strength_profile_table 
+            use_strength (cos_strength_profile_table, cos_strength_index);
+        }
+    }
+}
+
+/*-----------------------------------------
+* Logical table : dscp_cos_mapping_table
+*   Mapping dscp value to cos
+*---------------------------------------- */
+logical_table dscp_cos_mapping_table {
+    
+    table_type : index;
+    minsize    : 64;
+    maxsize    : 64;
+
+    keys {
+        bit[6]  dscp;
+    }
+
+    fields {
+        bit[3]  cos_strength_index; // Specify cos_strength_index per entry
+        bit[3]  cos;
+    }
+
+    key_construct() {
+        dscp = local_bus.dscp;
+    }
+    // Action to assign strength_index
+    fields_assign() {
+        if(_LOOKUP0 == 1)
+        {
+            // Specify the dynamic index into cos_strength_profile_table
+            use_strength (cos_strength_profile_table, cos_strength_index);
+        }
+    }
+}
+
+/*-----------------------------------------
+* Strength cosntruct declaration
+*---------------------------------------- */
+struct cos_strength_t {
+    fields {
+        bit[4] cos_strength; // Actual Strength value to resolve
+    }
+}
+
+/* 
+* Initiate the cos_strength_profile_table which will be populated at runtime
+*/
+strength cos_strength_t cos_strength_profile_table;
+
+
+/*-----------------------------------------
+* Function construct
+*   Assign default cos value, 
+*     and default cos_strength
+*---------------------------------------- */
+function do_default_strength_assignment(){
+    if (ingress_pkt.group1.vlan_tag._PRESENT) {
+        local_bus.cos = 1;  // default cos value
+        local_bus.cos_strength = 1; // default cos_strength.
+    }
+}
+
+
+/*************************************
+PROGRAM
+*************************************/
+program strength_cos {
+
+    // INPUT:
+    /* BASE_INPUT macro implements standard input from BMI (Behavior Model Infrastructure) to program */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // Calling parser tree parsing from main program
+    parse_begin(start);
+
+    // Look up PRI_COS mapping table
+    pri_cos_mapping_table.lookup(0);
+
+    // Look up DSCP_COS mpping table
+    dscp_cos_mapping_table.lookup(0);
+
+    // Default bus strength assignment
+    do_default_strength_assignment();
+
+    // Debugging message
+    print ("VLAN pri = %d, dscp = %d\n", local_bus.vlan_pri, local_bus.dscp);
+    
+    /*
+     * Strength resolution function
+     *   There are 3 strength sources for strength resoluion:
+     *     a. local_bus as default cos
+     *     b. pri_cos_mapping_table for tagged packets
+     *     c. dscp_cos_mapping_table for ipv4 packets
+     *   Each source provide strength_index into cos_strength_profile_table 
+     *   The entry value of cos_strength_profile_table is used in strength resolution
+     *   
+     */  
+     strength_resolve( local_bus.cos, // field taking the assignment
+            local_bus.cos_strength,   // strength for value on bus
+            { pri_cos_mapping_table._LOOKUP0, NULL, cos_strength_profile_table.cos_strength, pri_cos_mapping_table.cos},
+            { dscp_cos_mapping_table._LOOKUP0, NULL, cos_strength_profile_table.cos_strength, dscp_cos_mapping_table.cos});
+
+
+    // cos assignment result
+    print ("Cos assignment is done, cos = %d\n", local_bus.cos);
+ 
+
+    //MMU:
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU Special Function*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

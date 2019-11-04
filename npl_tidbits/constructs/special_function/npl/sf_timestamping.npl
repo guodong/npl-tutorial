@@ -1,0 +1,140 @@
+/*
+********************************************************************************
+** Purpose: 
+**   To demonstrate & provide sandbox to experiment 'special function' construct
+**
+** Description:
+**   Special function is used to connect a fixed function block with the rest 
+**   of the NPL logic.
+**   In this example, timestamping function, which is usually a hardware 
+**   function block, is implemented to demostrate the use of special function.
+**   The simulation of packet timestamp uses LINUX C function to get the 
+**   Time of the day information and is implemented in 
+**   bm_tests/sf_definition/bm_sfc.cpp. NPL code does timestamping for every 
+**   incoming packet, and print the timestamp value in the BM window.
+**
+** Topology diagram:
+**         +-----+
+**    +--> |0   1+--->
+**         |     |
+**         |     |
+**         |     |
+**         +-----+
+**
+**
+** Notes:
+**   The implementation of timestamp uses LINUX C function 'clock_gettime'.
+**
+** Verification method: 
+**   a. bm_tests/corp_net/testPkt.py sends 5 packets, the interval of each 
+**      packet is 1 sec.
+**
+**   b. BM window prints out the timestamping of each packets based on the time 
+        of the system.
+********************************************************************************
+*
+*/
+
+#include "base_helper.npl"
+
+/*
+* Logical register to control timestamp enable
+*/
+logical_register ts_ctrl {
+    fields {
+        bit[1] enable = 0x1;  // default value assignment
+    }
+}
+
+/* -----------------------------------
+* Spection function construct 
+*    The C++ implementation of timestamp special function in BM is in
+*    bm_tests/sf_definition/bm_sfc.cpp: _BModel::sfc_timestamping 
+* ---------------------------------- */
+
+// Special function declaration.
+
+special_function timestamping {
+    usage_mode_create(in const index,
+              in bit ts_enable,
+              out bit ts_valid,
+              out bit[32] ts_val_sec,
+              out bit[32] ts_val_nsec
+              );
+    usage_mode_select(in bit index);
+}
+
+/* 
+* Local variables are defined as bus construct
+*/
+struct local_bus_t {
+    fields{
+        bit ts_enable;
+        bit ts_valid;
+        bit[32] ts_val_sec;
+        bit[32] ts_val_nsec;
+    }
+}
+
+bus local_bus_t local_bus; 
+
+/*
+* Helper function to do bus variable assignment
+*/
+function ts_enable() {
+    local_bus.ts_enable = ts_ctrl.enable;
+}
+
+
+
+
+/*************************************
+PROGRAM
+*************************************/
+program sf_timestamping {
+
+    // INPUT
+    /* BASE_INPUT macro implements standard input from BMI 
+     * (Behavior Model Infrastructure) to program 
+     */
+    BASE_INPUT;
+
+    //Ingress
+    /* YOUR INGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    /* 
+     * Bus field assignments are not allowed in the main program
+     * Use a helper function to enable timestamping 
+     */
+    ts_enable();
+
+    /* Instantiate one entry of special function at index 0 */
+    timestamping.usage_mode_create( 0,
+            local_bus.ts_enable,
+            local_bus.ts_valid,
+            local_bus.ts_val_sec,
+            local_bus.ts_val_nsec
+            );
+
+    // Execute special function
+    timestamping.execute();
+
+    if (local_bus.ts_valid) {
+        // Debug print on BModel window
+        print ("Timestamp is valid: ts_val_sec = %d sec, ts_val_nsec = %d ns\n", local_bus.ts_val_sec, local_bus.ts_val_nsec);
+    }
+    
+
+    //MMU
+    base_assign_destination();
+    BASE_MMU; /*BASE_MMU macro implements default MMU SpecialFunction*/
+
+    //Egress
+    base_egress();
+    /* YOUR EGRESS LOGIC IMPLEMENTATION GOES HERE */
+
+    // OUTPUT:
+    /* BASE_OUTPUT macro implements standard output to BMI from program */
+    BASE_OUTPUT;
+}
+

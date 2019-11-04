@@ -1,0 +1,309 @@
+# 1 "npl/editor_l2_tag.npl"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 1 "<command-line>" 2
+# 1 "npl/editor_l2_tag.npl"
+# 54 "npl/editor_l2_tag.npl"
+# 1 "npl/base_helper.npl" 1
+# 38 "npl/base_helper.npl"
+struct l2_t {
+    fields {
+        bit[48] macda;
+        bit[48] macsa;
+        bit[16] ethertype;
+    }
+}
+struct vlan_t {
+    fields {
+        bit[3] pcp;
+        bit[1] cfi;
+        bit[12] vid;
+        bit[16] ethertype;
+    }
+}
+
+struct grp_t {
+    fields {
+        l2_t l2;
+        vlan_t outer_tag;
+        vlan_t inner_tag;
+    }
+}
+
+struct ing_pkt_t {
+    fields {
+        grp_t grp;
+    }
+}
+
+struct egr_pkt_t {
+    fields {
+        grp_t grp;
+    }
+}
+
+
+
+packet ing_pkt_t ingress_pkt;
+packet egr_pkt_t egress_pkt;
+
+
+struct obj_bus_t {
+    fields {
+        bit[2] port_type_cfg;
+        bit[7] port_num;
+        bit[8] dst_modid;
+        bit[7] dst_port;
+    }
+}
+
+
+struct ccbi_t {
+    fields {
+        bit[128] l2_pbm;
+        bit[128] l3_pbm;
+    }
+}
+
+struct ccbe_t {
+    fields {
+        bit[7] dst_port;
+    }
+}
+
+struct control_id_t {
+    fields {
+        bit[4] otpid_enable;
+        bit ts_enable;
+    }
+}
+
+struct time_bus_t {
+    fields {
+        bit[16] currenttime;
+    }
+}
+
+struct egr_obj_bus_t {
+    fields {
+        bit[8] dst_modid;
+        bit[7] dst_port;
+        bit[7] ing_port;
+        bit[16] ingress_timestamp;
+    }
+}
+
+struct aux_bus_t {
+    fields {
+        bit [16] drop_vector;
+    }
+}
+
+bus obj_bus_t obj_bus;
+bus ccbi_t ccbi;
+bus ccbe_t ccbe;
+bus control_id_t control_id;
+bus time_bus_t time_bus;
+bus egr_obj_bus_t egr_obj_bus;
+bus aux_bus_t egr_aux_bus;
+
+
+
+special_function iarb {
+
+    usage_mode_create(in const eindex,
+               out bit[4] otpid_enable,
+               out bit[1] ts_enable,
+               out bit[7] port_num,
+               out bit[2] port_type_cfg,
+               out bit[16] currenttime
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+special_function mmu {
+
+    usage_mode_create(in const eindex,
+               in bit[128] l2_pbm,
+               in bit[128] l3_pbm,
+               out bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+
+special_function edb {
+
+    usage_mode_create(in const eindex,
+               in bit[16] drop_vector,
+               in bit[8] dst_mod,
+               in bit[7] dst_port
+               );
+
+    usage_mode_select(in bit[1] eindex);
+
+}
+
+function base_assign_destination() {
+    ccbi.l3_pbm = 0;
+    ccbe.dst_port = 0;
+    ccbi.l2_pbm = 0x2;
+}
+
+function base_egress() {
+    egr_aux_bus.drop_vector = 0;
+    egr_obj_bus.dst_modid = 0;
+    egr_obj_bus.dst_port = ccbe.dst_port;
+}
+# 55 "npl/editor_l2_tag.npl" 2
+# 76 "npl/editor_l2_tag.npl"
+parser_node start {
+    root_node : 1;
+    next_node ethernet;
+}
+
+
+parser_node ethernet {
+    extract_fields(ingress_pkt.grp.l2);
+    switch (latest.ethertype) {
+        0x8100: next_node outer_tag;
+        0x9100: next_node inner_tag;
+        default: next_node ingress;
+    }
+}
+
+
+parser_node outer_tag {
+    extract_fields(ingress_pkt.grp.outer_tag);
+    switch (latest.ethertype) {
+        0x9100: next_node inner_tag;
+        default: next_node ingress;
+    }
+}
+
+
+parser_node inner_tag {
+    extract_fields(ingress_pkt.grp.inner_tag);
+    next_node ingress;
+}
+
+parser_node ingress {
+    end_node : 1;
+}
+
+
+
+
+
+struct local_bus_t {
+    fields {
+        bit[16] tpid;
+        bit[12] vid;
+        bit[3] pcp;
+    }
+}
+
+bus local_bus_t local_bus;
+
+
+
+
+
+
+function do_egress_pkt_modify() {
+
+    local_bus.tpid = 0x8100;
+
+    egress_pkt.grp.l2 = ingress_pkt.grp.l2;
+    egress_pkt.grp.outer_tag = ingress_pkt.grp.outer_tag;
+    egress_pkt.grp.inner_tag = ingress_pkt.grp.inner_tag;
+
+    if (egress_pkt.grp.outer_tag._PRESENT) {
+
+
+        print ("Remove outer tag, and replace L2 ethertype\n");
+
+
+        replace_header_field (egress_pkt.grp.l2.ethertype, egress_pkt.grp.outer_tag.ethertype);
+
+
+        delete_header(egress_pkt.grp.outer_tag);
+    } else {
+
+        egress_pkt.grp.outer_tag.vid = 0xa;
+        egress_pkt.grp.outer_tag.pcp = 0x0;
+
+        print ("Add outer tag, replace L2 ethertype\n");
+
+        if (egress_pkt.grp.inner_tag._PRESENT) {
+
+            egress_pkt.grp.outer_tag.ethertype = 0x9100;
+        } else {
+
+            egress_pkt.grp.outer_tag.ethertype = egress_pkt.grp.l2.ethertype;
+        }
+
+
+        add_header(egress_pkt.grp.outer_tag);
+
+
+
+
+
+        replace_header_field (egress_pkt.grp.l2.ethertype, local_bus.tpid);
+
+    }
+
+}
+
+
+
+
+program editor_l2_tag {
+
+
+
+
+
+    iarb.usage_mode_create( 0, control_id.otpid_enable, control_id.ts_enable, obj_bus.port_num, obj_bus.port_type_cfg, time_bus.currenttime ); iarb.execute();
+
+
+
+
+
+    parse_begin(start);
+
+    if (ingress_pkt.grp.outer_tag._PRESENT) {
+        if (ingress_pkt.grp.inner_tag._PRESENT) {
+            print("Ingress packet is double tagged. \n");
+        } else {
+            print("Ingress packet is single outer tagged. \n");
+        }
+    } else {
+        if (ingress_pkt.grp.inner_tag._PRESENT) {
+            print("Ingress packet is single inner tagged. \n");
+        } else {
+            print("Ingress packet is untagged. \n");
+        }
+    }
+
+
+    base_assign_destination();
+    mmu.usage_mode_create( 0, ccbi.l2_pbm, ccbi.l3_pbm, ccbe.dst_port ); mmu.execute();
+
+
+    base_egress();
+
+
+
+    do_egress_pkt_modify();
+
+
+
+    edb.usage_mode_create( 0, egr_aux_bus.drop_vector, egr_obj_bus.dst_modid, egr_obj_bus.dst_port ); edb.execute();
+}

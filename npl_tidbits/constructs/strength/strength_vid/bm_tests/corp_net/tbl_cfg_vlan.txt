@@ -1,0 +1,35 @@
+#
+#########################################################################################
+#
+# Purpose:
+#   Configuration needed for 'strength' vid assignment example.
+#
+# Steps:
+#  a. Populate PORT_TABLE with following enrtry.
+#    >> port_table[0].default_vid=0xf   ; port default vlan is set to 0xf
+#
+#  b. Populate vlan_protocol_table with the following entries.
+#    >> vlan_protocol_table[0].vid=0x1  ; vlan for SNAP packet is 0x1
+#    >> vlan_protocol_table[1].vid=0x2  ; vlan for LLC packet is 0x2
+#
+#  c. Populate vlan_strength_profile_table with the following entry
+#    >> vlan_strength_profile_table[1].vlan_strength=1  ; port_table strength
+#    >> vlan_strength_profile_table[2].vlan_strength=2  ; vlan_protocol_table strength
+#    With this configuration, strength of vlan_protocol_table > port_table
+#
+#########################################################################################
+
+# Default vlan in port 0
+lt port_table insert _INDEX=0 default_vid=0xf
+
+# vlan_protocol_table for vlan assignment
+# SNAP uses index=0
+lt vlan_protocol_table insert _INDEX=0 vid=0x1
+# SNAP uses index=0
+lt vlan_protocol_table insert _INDEX=1 vid=0x2
+
+# Assign strength in vlan_strength_profile_table
+lt vlan_strength_profile_table insert _INDEX=1 vlan_strength=1
+lt vlan_strength_profile_table insert _INDEX=2 vlan_strength=2
+
+

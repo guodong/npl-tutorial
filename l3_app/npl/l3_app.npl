@@ -1,0 +1,1251 @@
+//this L3 npl code lists the l3 routing functionality
+#include "l3_app_bus.npl"
+#include "l3_parser.npl"
+#include "l3_sf_defines.npl"
+
+//@NPL_PRAGMA(ipv4_key_select, key_select_mapping:ipv4_host_table._LOOKUP0)
+//@NPL_PRAGMA(ipv6_key_select, key_select_mapping:ipv6_host_table._LOOKUP0)
+
+
+/********************
+TABLE SPECIFICATION
+********************/
+/********************
+PORT TABLE
+********************/
+logical_table port_table {
+
+    table_type : index;
+    minsize    : 128;
+    maxsize    : 128;
+
+    keys {
+        bit[PORT_NUM_WIDTH] port_num;
+    }
+
+    fields {
+        bit[1]  l3_enable;
+        bit[1]  otag_enable;
+        bit[8]  src_modid;
+        bit[12] default_vid;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            port_num = obj_bus.port_num;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.port_l3_enable = l3_enable;
+            cmd_bus.otag_enable = otag_enable;
+            obj_bus.src_modid = src_modid;
+            obj_bus.port_vid = default_vid;
+        }
+    }
+}
+
+/********************
+IPv4 TUNNEL Table
+********************/
+logical_table ipv4_tunnel_table {
+
+    table_type : tcam;
+    minsize    : 128;
+    maxsize    : 128;
+
+    keys {
+        bit[32] sip;
+        bit[32] dip;
+        bit[8] protocol;
+    }
+
+    fields {
+        bit     valid;
+        bit     use_outer_ttl;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            sip = ingress_pkt.group2.ipv4.sip;
+            dip = ingress_pkt.group2.ipv4.dip;
+            protocol = ingress_pkt.group2.ipv4.protocol;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.ipv4_tunnel_table_hit = valid;
+            cmd_bus.use_outer_ttl = use_outer_ttl;
+        }
+    }
+}
+
+/********************
+IPv6 TUNNEL Table
+********************/
+logical_table ipv6_tunnel_table {
+
+    table_type : tcam;
+    minsize    : 128;
+    maxsize    : 128;
+
+    keys {
+        bit[128] sip;
+        bit[128] dip;
+        bit[8] next_header;
+    }
+
+    fields {
+        bit     valid;
+        bit     use_outer_ttl;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            sip = ingress_pkt.group2.ipv6.sip;
+            dip = ingress_pkt.group2.ipv6.dip;
+            next_header = ingress_pkt.group2.ipv6.next_header;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.ipv6_tunnel_table_hit = valid;
+            cmd_bus.use_outer_ttl = use_outer_ttl;
+        }
+    }
+}
+
+/********************
+VLAN TABLE
+********************/
+logical_table vlan_table {
+
+    table_type : index;
+    minsize    : 4096;
+    maxsize    : 4096;
+
+    keys {
+        bit[12] vid;
+    }
+
+    fields {
+        bit[12]  vrf;
+        bit[128] vlan_membership_bitmap;
+        bit[5]   stg_ptr;
+        bit      l3_enable;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            vid = obj_bus.vid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.vrf = vrf;
+            obj_bus.vlan_membership_bitmap = vlan_membership_bitmap;
+            obj_bus.stg_ptr = stg_ptr;
+            cmd_bus.vlan_l3_enable = l3_enable;
+        }
+    }
+}
+
+/********************
+VLAN STG TABLE
+********************/
+logical_table vlan_stg_table {
+
+    table_type : index;
+    minsize    : 32;
+    maxsize    : 32;
+
+    keys {
+        bit[5] stg_ptr;
+    }
+
+    fields {
+        bit[2] stg_state;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            stg_ptr = obj_bus.stg_ptr;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.stg_state = stg_state;
+        }
+    }
+}
+
+/********************
+MY STATION TCAM
+********************/
+logical_table my_station_table {
+
+    table_type : tcam;
+    minsize    : 16;
+    maxsize    : 16;
+
+    keys {
+        bit[48] macda;
+        bit[12] vid;
+        bit[PORT_NUM_WIDTH] port_num;
+        bit[8] src_modid;
+    }
+
+    fields {
+        bit[1] my_stn_routing_enable;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            macda = ingress_pkt.group1.l2.macda;
+            vid   = obj_bus.vid;
+            port_num  = obj_bus.port_num;
+            src_modid = obj_bus.src_modid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.my_stn_routing_enable = my_stn_routing_enable;
+        }
+    }
+}
+
+/********************
+L2 HOST 
+********************/
+logical_table l2_host_table {
+
+    table_type : hash;
+    minsize    : 8192;
+    maxsize    : 16384;
+
+    keys {
+        bit[48] macda;
+        bit[12] vid;
+    }
+
+    fields {
+        bit[8]              dst_modid;
+        bit[PORT_NUM_WIDTH] dst_port;
+        bit[MGID_WIDTH]     mgid;
+        bit                 mc_pkt;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            macda = ingress_pkt.group1.l2.macda;
+            vid   = obj_bus.vid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.dst_modid = dst_modid;
+            obj_bus.dst_port = dst_port;
+            obj_bus.mgid = mgid;
+            cmd_bus.mc_pkt = mc_pkt;
+        }
+    }
+}
+
+/**************************************
+Function to select key for L3 HOST Table 
+**************************************/
+function ipv4_key_select() {
+
+    if (cmd_bus.ipv4_tunnel_table_hit) {
+        ipv4_host_table_key.da = ingress_pkt.group4.ipv4.dip; //inner
+    } else {
+        ipv4_host_table_key.da = ingress_pkt.group2.ipv4.dip; //outer
+    }
+}
+
+function ipv6_key_select() {
+    if (cmd_bus.ipv6_tunnel_table_hit) {
+        ipv6_host_table_key.da = ingress_pkt.group4.ipv6.dip; //inner
+    } else {
+        ipv6_host_table_key.da = ingress_pkt.group2.ipv6.dip; //outer
+    }
+}
+
+/********************
+L3 HOST TCAM - Only V4UC for now
+********************/
+logical_table ipv4_host_table {
+
+    table_type : hash;
+    minsize    : 4096;
+    maxsize    : 8192;
+
+    keys {
+        bit[32] da;
+        bit[12] vrf;
+    }
+
+    fields {
+        bit[12] nhi_index;
+        bit[3]  pri;
+        bit     rpe;
+        bit     local_address;
+        bit     do_ecmp;  //if set then do ecmp processing else pick nhi
+        bit[6]  ecmp_group_index;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            da = ipv4_host_table_key.da;
+            vrf = obj_bus.vrf;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.nhi_index       = nhi_index;
+            cmd_bus.l3_dst_rpe      = rpe;
+            obj_bus.l3_dst_pri      = pri;
+            obj_bus.local_address   = local_address;
+            obj_bus.ecmp_group_index = ecmp_group_index;
+            cmd_bus.do_ecmp         = do_ecmp;
+            cmd_bus.src_private_hit = 0;
+            cmd_bus.dst_private_hit = _VALID;
+            cmd_bus.src_public_hit  = 0;
+            cmd_bus.dst_public_hit  = _VALID;
+        }
+    }
+}
+
+/********************
+L3 HOST TCAM - Only V6UC for now
+********************/
+logical_table ipv6_host_table {
+
+    table_type : hash;
+    minsize    : 4096;
+    maxsize    : 8192;
+
+    keys {
+        bit[128] da;
+        bit[12] vrf;
+    }
+
+    fields {
+        bit[12] nhi_index;
+        bit[3]  pri;
+        bit     rpe;
+        bit     local_address;
+        bit     do_ecmp;  //if set then do ecmp processing else pick nhi
+        bit[6]  ecmp_group_index;
+    }
+
+    key_construct() {
+        if (_LOOKUP0) {
+            da = ipv6_host_table_key.da;
+            vrf = obj_bus.vrf; 
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.nhi_index       = nhi_index;
+            cmd_bus.l3_dst_rpe      = rpe;
+            obj_bus.l3_dst_pri      = pri;
+            obj_bus.local_address   = local_address;
+            obj_bus.ecmp_group_index = ecmp_group_index;
+            cmd_bus.do_ecmp         = do_ecmp;
+            cmd_bus.src_private_hit = 0;
+            cmd_bus.dst_private_hit = _VALID;
+            cmd_bus.src_public_hit  = 0;
+            cmd_bus.dst_public_hit  = _VALID;
+        }
+    }
+}
+
+/********************
+Ingress ecmp_group Table
+********************/
+logical_table ecmp_group_table {
+
+    table_type : index;
+    minsize    : 64;
+    maxsize    : 64;
+
+    keys {
+        bit[6] ecmp_idx;
+    }
+
+    fields {
+        bit[8] base_nhi_index;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            ecmp_idx  = obj_bus.ecmp_group_index;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.nhi_index[11:4] = base_nhi_index;
+        }
+    }
+}
+
+/********************
+Ingress Next Hop Index Table
+********************/
+logical_table ing_nhi_table {
+
+    table_type : index;
+    minsize    : 4096;
+    maxsize    : 4096;
+
+    keys {
+        bit[12] nhi_index;
+    }
+
+    fields {
+        bit[8]              dst_modid;
+        bit[PORT_NUM_WIDTH] dst_port;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            nhi_index  = obj_bus.nhi_index;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.nhi_dst_modid = dst_modid; //l3 routed destination
+            obj_bus.nhi_dst_port = dst_port;
+        }
+    }
+}
+
+/********************
+Ingress ecmp_group Table
+********************/
+logical_table l2mc_table {
+
+    table_type : index;
+    minsize    : 2048;
+    maxsize    : 2048;
+
+    keys {
+        bit[MGID_WIDTH] mgid;
+    }
+
+    fields {
+        bit[PORT_BITMAP_WIDTH] l2mc_bitmap;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            mgid  = obj_bus.mgid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.l2mc_bitmap = l2mc_bitmap;
+        }
+    }
+}
+
+/***********************
+EGRESS TABLES
+***********************/
+/********************
+Egress Next Hop Index Table
+********************/
+logical_table egr_nhi_table {
+
+    table_type : index;
+    minsize    : 4096;
+    maxsize    : 4096;
+
+    keys {
+        bit[12] nhi_index;
+    }
+
+    fields {
+        bit[48] dst_mac_addr;
+        bit[12] vid;
+        bit     update_vid;
+        bit[12] l3_intf_num;
+        bit     encap_tunnel;
+        bit     encap_tunnel_type;
+        bit[8]  ip_tunnel_table_index;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            nhi_index = egr_obj_bus.nhi_index;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            egr_field_bus.macda = dst_mac_addr; //must be driven on EGR Field bus
+            egr_obj_bus.l3_intf_num = l3_intf_num;
+            egr_obj_bus.nhi_vid = vid;
+            egr_cmd_bus.update_vid = update_vid;
+            egr_cmd_bus.encap_tunnel = encap_tunnel;
+            egr_cmd_bus.encap_tunnel_type = encap_tunnel_type;
+            egr_obj_bus.ip_tunnel_table_index = ip_tunnel_table_index;
+        }
+    }
+}
+
+/********************
+Egress Interface Table
+********************/
+logical_table egr_intf_table {
+
+    table_type : index;
+    minsize : 4096;
+    maxsize : 4096;
+
+    keys {
+        bit[12] l3_intf_num;
+    }
+
+    fields {
+        bit[48] src_mac_addr;
+        bit[8]  new_ttl; //uniform model
+        bit     dec_ttl; //pipe model
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            l3_intf_num = egr_obj_bus.l3_intf_num;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            egr_field_bus.macsa = src_mac_addr; //must be driven on EGR Field bus
+            egr_obj_bus.new_ttl = new_ttl;
+            egr_cmd_bus.dec_ttl = dec_ttl;
+        }
+    }
+}
+
+/********************
+Egress IP Tunnel Table for Encap
+********************/
+logical_table egr_ipv4_tunnel_table {
+
+    table_type : index;
+    minsize    : 256;
+    maxsize    : 256;
+
+    keys {
+        bit[8] ip_tunnel_table_index;
+    }
+
+    fields {
+        bit[32] src_ip_addr;
+        bit[32] dst_ip_addr;
+        bit[8]  protocol; 
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            ip_tunnel_table_index = egr_obj_bus.ip_tunnel_table_index;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            egr_obj_bus.src_ip_addr = src_ip_addr;
+            egr_obj_bus.dst_ip_addr = dst_ip_addr;
+            egr_obj_bus.protocol = protocol;
+        }
+    }
+}
+
+/********************
+Egress IP Tunnel Table for Encap
+********************/
+logical_table egr_ipv6_tunnel_table {
+
+    table_type : index;
+    minsize    : 256;
+    maxsize    : 256;
+
+    keys {
+        bit[8] ip_tunnel_table_index;
+    }
+
+    fields {
+        bit[128] src_ip_addr;
+        bit[128] dst_ip_addr;
+        bit[8]  protocol; 
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            ip_tunnel_table_index = egr_obj_bus.ip_tunnel_table_index;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            egr_obj_bus.src_ip_addr = src_ip_addr;
+            egr_obj_bus.dst_ip_addr = dst_ip_addr;
+            egr_obj_bus.protocol = protocol;
+        }
+    }
+}
+
+/*************************************
+FUNCTION DECLARATION
+*************************************/
+
+/*************************************
+VID assignment
+ - Pick Packet VLAN
+ - In case of untag packet, pick VID from Port_Table
+*************************************/
+function do_vid_assign() {
+
+    if (ingress_pkt.group1.otag._PRESENT) {
+        obj_bus.vid = ingress_pkt.group1.otag.vid;
+    } else if (ingress_pkt.group1.itag._PRESENT) {
+        obj_bus.vid = ingress_pkt.group1.itag.vid;
+    } else {
+        obj_bus.vid = obj_bus.port_vid;
+    }
+}
+
+/*************************************
+tunnel init
+ initialize tunnel hits
+*************************************/
+function do_tunnel_init() {
+
+    cmd_bus.ipv4_tunnel_table_hit = 0;
+    cmd_bus.ipv6_tunnel_table_hit = 0;
+}
+
+
+/*************************************
+POST PARSE, UAT STAGE
+ - Check incoming IP Header Fields for determining type of the address
+ - Vlan Membership Check
+ - Spanning Tree State Check
+*************************************/
+function do_l3_uat() {
+
+    cmd_bus.ip_sip_zero = 0;
+    cmd_bus.ip_dip_zero = 0;
+    cmd_bus.ip_sip_loopback = 0;
+    cmd_bus.ip_dip_loopback = 0;
+    cmd_bus.ip_sip_classd = 0;
+    cmd_bus.ip_dip_classd = 0;
+    cmd_bus.ip_sip_bc = 0;
+    cmd_bus.ip_dip_bc = 0;
+    cmd_bus.do_l3_lookup = 0;
+    cmd_bus.do_l2_lookup = 0;
+    local.in_port_bitmap = 0;
+    local.temp_port_bitmap = 0;
+    aux_bus.drop_vector = 0;
+
+    //Membership check
+    local.in_port_bitmap = 1 << obj_bus.port_num;
+    local.temp_port_bitmap = obj_bus.vlan_membership_bitmap & local.in_port_bitmap;
+
+    //Header field validation
+    if (ingress_pkt.group1.l2._PRESENT && !ingress_pkt.group1.snap._PRESENT && !ingress_pkt.group1.llc._PRESENT && !ingress_pkt.group1.vntag._PRESENT && !ingress_pkt.group1.etag._PRESENT) {
+        if (ingress_pkt.group2.ipv4._PRESENT) {
+            cmd_bus.do_l3_lookup = 1;
+
+            if (ingress_pkt.group2.ipv4.sip == 0) {
+                cmd_bus.ip_sip_zero = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.dip == 0) {
+                cmd_bus.ip_dip_zero = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.sip[31:24] == 0x7F) {
+                cmd_bus.ip_sip_loopback = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.dip[31:24] == 0x7F) {
+                cmd_bus.ip_dip_loopback = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.sip[31:28] == 0xE) {
+                cmd_bus.ip_sip_classd = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.dip[31:28] == 0xE) {
+                cmd_bus.ip_dip_classd = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.sip == 0xFFFFFFFF) {
+                cmd_bus.ip_sip_bc = 1;
+            }
+
+            if (ingress_pkt.group2.ipv4.dip == 0xFFFFFFFF) {
+                cmd_bus.ip_dip_bc = 1;
+            }
+        }
+
+	if (ingress_pkt.group2.ipv6._PRESENT) {
+	    cmd_bus.do_l3_lookup = 1;
+	    
+            if (ingress_pkt.group2.ipv6.sip == 0) {
+                cmd_bus.ip_sip_zero = 1;
+            }
+
+            if (ingress_pkt.group2.ipv6.dip == 0) {
+                cmd_bus.ip_dip_zero = 1;
+            }
+
+            //FIX ME possible IPV6 loopback addresses
+            if (ingress_pkt.group2.ipv6.sip == 0x1) {
+                cmd_bus.ip_sip_loopback = 1;
+            }
+
+            if (ingress_pkt.group2.ipv6.dip == 0x1) {
+                cmd_bus.ip_dip_loopback = 1;
+            }
+            
+	    if (ingress_pkt.group2.ipv6.sip[127:120] == 0xFF) {
+                cmd_bus.ip_sip_classd = 1;
+            }
+
+            if (ingress_pkt.group2.ipv6.dip[127:120] == 0xFF) {
+                cmd_bus.ip_dip_classd = 1;
+            }
+
+
+	}
+
+        if (ingress_pkt.group1.l2._PRESENT) {
+            if (ingress_pkt.group1.l2.macda == MAC_ADDR_BCAST) {
+                cmd_bus.pkt_l2_da_bcast = 1;
+            }
+            if (ingress_pkt.group1.l2.macda[40:40] == 1) {
+                cmd_bus.pkt_l2_da_mcast = 1;
+            }
+        }
+
+        if (ingress_pkt.group1.otag._PRESENT) {
+            if (ingress_pkt.group1.otag.vid == 0) {
+                cmd_bus.pkt_dot1p = 1;
+            } else {
+                cmd_bus.pkt_dot1p = 0;
+            } 
+        } 
+
+        //==============================
+        //Custom Check for My Network
+        //==============================
+        if (ingress_pkt.group2.ipv4._PRESENT & ingress_pkt.group2.tcp._PRESENT) {
+            if ((ingress_pkt.group2.ipv4.dip == 0xDEADBEEF) & (ingress_pkt.group2.tcp.src_port == 0xF00D) & (ingress_pkt.group2.tcp.flags_syn)) {
+              cmd_bus.do_l2_lookup = 1;
+              cmd_bus.do_l3_lookup = 0;
+            }
+        }
+
+        //Spanning tree check
+        if (cmd_bus.stg_state != 3 || local.temp_port_bitmap == 0) {
+            aux_bus.drop_vector[MEMBERSHIP_SPG_FAILED] = 1; //Membership check or spanning tree failed.
+        } else {
+            cmd_bus.do_l2_lookup = 1;
+        }
+    } else {
+        aux_bus.drop_vector[UNKNOWN_PKT] = 1; //Not a supported packet format.
+    }
+}
+
+/*************************************
+Select Fields for Hashing 
+*************************************/
+function select_fields_for_hashing() {
+    if (ingress_pkt.group2.ipv4._PRESENT) {
+       if (cmd_bus.ipv4_tunnel_table_hit) {
+           obj_bus.ip_da = ingress_pkt.group4.ipv4.dip;
+           obj_bus.ip_sa = ingress_pkt.group4.ipv4.sip;
+        } else {
+           obj_bus.ip_da = ingress_pkt.group2.ipv4.dip;
+           obj_bus.ip_sa = ingress_pkt.group2.ipv4.sip;
+        } 
+    } else if (ingress_pkt.group2.ipv6._PRESENT) {
+       if (cmd_bus.ipv6_tunnel_table_hit) {
+           obj_bus.ip_da = ingress_pkt.group4.ipv6.dip;
+           obj_bus.ip_sa = ingress_pkt.group4.ipv6.sip;
+        } else {
+           obj_bus.ip_da = ingress_pkt.group2.ipv6.dip;
+           obj_bus.ip_sa = ingress_pkt.group2.ipv6.sip;
+        } 
+    }
+}
+
+/*************************************
+L3 FORWARDING
+*************************************/
+function do_l3_forwarding() {
+
+    local.no_l3_switch = 0;
+    cmd_bus.l3_routable = 0;
+    cmd_bus.l3_src_discard = 0;
+    cmd_bus.l3_dst_discard = 0;
+    cmd_bus.change_pri = 0;
+    obj_bus.new_pri = 0;
+
+//    if (ipv4._PRESENT & cmd_bus.do_l3_lookup & cmd_bus.my_stn_routing_enable) {
+    if (cmd_bus.do_l3_lookup & cmd_bus.my_stn_routing_enable) {
+		if (ingress_pkt.group2.ipv4._PRESENT) {
+            if (ingress_pkt.group2.ipv4.hdr_checksum == 0) {
+                aux_bus.drop_vector[CHECKSUM_FAILURE] = 1; //checksum failed
+                local.no_l3_switch = 1;
+            }
+		}
+        if (cmd_bus.ip_sip_zero | cmd_bus.ip_dip_zero | 
+                cmd_bus.ip_sip_loopback | cmd_bus.ip_dip_loopback | 
+                cmd_bus.ip_sip_classd) {
+            local.no_l3_switch = 1;
+        }
+
+        if (cmd_bus.ip_dip_bc) {
+            local.no_l3_switch = 1;
+        }
+
+        if (cmd_bus.ip_dip_classd) {
+            local.no_l3_switch = 1;
+        }
+
+		if (ingress_pkt.group2.ipv4._PRESENT) {
+        	if ((ingress_pkt.group2.ipv4.ttl == 0) && (obj_bus.local_address == 0)) {
+            	local.no_l3_switch = 1;
+        	}
+
+        	if ((ingress_pkt.group2.ipv4.ttl == 1) && (obj_bus.local_address == 0)) {
+            	local.no_l3_switch = 1;
+        	}
+
+        	if (ingress_pkt.group2.ipv4.option != 0) {
+            	local.no_l3_switch = 1;
+        	}
+		}
+
+        if ((local.no_l3_switch == 0) & (cmd_bus.dst_private_hit | cmd_bus.dst_public_hit)) {
+            cmd_bus.l3_routable = 1;
+
+            if (cmd_bus.src_private_hit | cmd_bus.src_public_hit) {
+                cmd_bus.l3_src_discard = 0;
+            }
+
+            if (cmd_bus.dst_private_hit | cmd_bus.dst_public_hit) {
+                cmd_bus.l3_dst_discard = 0;
+            }
+
+            if (cmd_bus.l3_dst_rpe) {
+                cmd_bus.change_pri = 1;
+                obj_bus.new_pri = obj_bus.l3_dst_pri;
+            }
+        }
+        else {
+            cmd_bus.l3_src_discard = 1;
+            cmd_bus.l3_dst_discard = 1;
+        }
+    }
+}
+
+/*************************************
+ECMP resolution
+ - Pick the hash from the special function. Append the hash to the Base NHI Index.
+*************************************/
+function update_nhi_for_ecmp() {
+
+    if (cmd_bus.do_ecmp) {
+        obj_bus.nhi_index[3:0] = obj_bus.rtag7_hash[3:0];
+    }
+}
+
+/*************************************
+Resolve Destination 
+ - Pick destination results from one of the table lookups
+*************************************/
+function resolve_destination() {
+
+    ccbi.l3_pbm = 0;
+    ccbi.l2_pbm = 0;
+    ccbe.dst_port = 0;
+    //By default on obj_bus dst_modid and dst_port are from the L2 table.
+    //However if L3 lookup was successful then pick it from nhi table.
+    if (cmd_bus.l3_routable) {
+        obj_bus.dst_modid = obj_bus.nhi_dst_modid;
+        ccbi.l3_pbm = 1 << obj_bus.nhi_dst_port;
+    } else if (cmd_bus.mc_pkt) {
+        ccbi.l2_pbm = obj_bus.l2mc_bitmap;
+    } else {
+        ccbi.l2_pbm = 1 << obj_bus.dst_port;
+    } 
+}
+
+
+/*************************************
+resolve_int_process
+ - Sets signal which indicates EP 
+whether to add INT headers or not
+*************************************/
+function resolve_int_process() {
+    cmd_bus.do_int_process = 0;
+    if (ingress_pkt.group2.int_header._PRESENT) {
+        local.int_ins_count = ingress_pkt.group2.int_header.max_hop_count - ingress_pkt.group2.int_header.total_hop_count;
+        if (local.int_ins_count != 0) {
+            cmd_bus.do_int_process = 1;
+        }
+    }
+}
+
+/*************************************
+ASSIGN to EGR BUS 
+ - Notional Only for clarity of understanding. Need not do this.
+*************************************/
+function assign_ing_to_egr_bus() {
+
+    egr_obj_bus.new_pri         = obj_bus.new_pri;
+    egr_cmd_bus.l3_routable     = cmd_bus.l3_routable;
+    egr_cmd_bus.change_pri      = cmd_bus.change_pri;
+    egr_obj_bus.nhi_index       = obj_bus.nhi_index;
+    egr_obj_bus.dst_modid       = obj_bus.dst_modid;
+    egr_obj_bus.dst_port        = ccbe.dst_port;
+    egr_obj_bus.ing_port        = obj_bus.port_num;
+    egr_obj_bus.ingress_timestamp = time_bus.currenttime;
+    egr_aux_bus.drop_vector     = aux_bus.drop_vector;
+    if (ingress_pkt.group2.ipv4._PRESENT) {
+    	egr_cmd_bus.decap_tunnel    = cmd_bus.ipv4_tunnel_table_hit;
+    } else if (ingress_pkt.group2.ipv6._PRESENT) {
+    	egr_cmd_bus.decap_tunnel    = cmd_bus.ipv6_tunnel_table_hit;
+    }
+    egr_cmd_bus.use_outer_ttl   = cmd_bus.use_outer_ttl;
+    egr_cmd_bus.do_int_transit  = cmd_bus.do_int_process;
+
+    if (cmd_bus.l3_src_discard | cmd_bus.l3_dst_discard) {
+        egr_aux_bus.drop_vector[L3_LOOKUP_DISCARD] = 1; //discard from L3 Lookups
+    }
+}
+
+/*************************************
+ENCAP IPV4 Header Construction
+*************************************/
+function ipv4_header_construction() {
+
+    egress_pkt.group2.ipv4.version = 4;
+    egress_pkt.group2.ipv4.hdr_len = 5;
+    egress_pkt.group2.ipv4.sip = egr_obj_bus.src_ip_addr[31:0];
+    egress_pkt.group2.ipv4.dip = egr_obj_bus.dst_ip_addr[31:0];
+    egress_pkt.group2.ipv4.protocol = egr_obj_bus.protocol;
+}
+
+/*************************************
+ENCAP IPV6 Header Construction
+*************************************/
+function ipv6_header_construction() {
+
+    egress_pkt.group2.ipv6.version = 6;
+    egress_pkt.group2.ipv6.sip = egr_obj_bus.src_ip_addr;
+    egress_pkt.group2.ipv6.dip = egr_obj_bus.dst_ip_addr;
+    egress_pkt.group2.ipv6.next_header = egr_obj_bus.protocol;
+}
+
+/*************************************
+PACKET MODIFICATION
+*************************************/
+function do_packet_modif() { //to be implemented on flex editor
+
+    egress_pkt.group1.l2 = ingress_pkt.group1.l2;
+    egress_pkt.group1.otag = ingress_pkt.group1.otag;
+    if (egr_cmd_bus.decap_tunnel) {
+        if (egr_cmd_bus.encap_tunnel_type == 0) {
+            egress_pkt.group2.ipv4 = ingress_pkt.group4.ipv4; //fwding
+            egress_pkt.group4.ipv4 = ingress_pkt.group2.ipv4; //to be decapped
+        } else {
+            egress_pkt.group2.ipv6 = ingress_pkt.group4.ipv6; //fwding
+            egress_pkt.group4.ipv6 = ingress_pkt.group2.ipv6; //to be decapped 
+        }
+    } else if (egr_cmd_bus.encap_tunnel) {
+        if (egr_cmd_bus.encap_tunnel_type == 0) {
+            egress_pkt.group4.ipv4 = ingress_pkt.group2.ipv4; //fwding. goes to inner
+        } else {
+            egress_pkt.group4.ipv6 = ingress_pkt.group2.ipv6; //fwding. goes to inner
+        }
+    } else {
+        if (ingress_pkt.group2.ipv4._PRESENT) {
+            egress_pkt.group2.ipv4 = ingress_pkt.group2.ipv4;
+        } else if (ingress_pkt.group2.ipv6._PRESENT) {
+            egress_pkt.group2.ipv6 = ingress_pkt.group2.ipv6;
+        }
+    }
+
+    if (egress_pkt.group1.otag._PRESENT) {
+        if (egr_cmd_bus.change_pri) {
+            replace_header_field(egress_pkt.group1.otag.pcp, egr_obj_bus.new_pri);
+        }
+        if (egr_cmd_bus.update_vid) {
+            replace_header_field(egress_pkt.group1.otag.vid, egr_obj_bus.nhi_vid);
+        }
+    }
+
+    if (egr_cmd_bus.decap_tunnel) {
+        delete_header(egress_pkt.group4.ipv4); //group4 is created as dummy.
+    }
+
+    if (egr_cmd_bus.encap_tunnel & egr_cmd_bus.encap_tunnel_type == 0) {
+        ipv4_header_construction();
+        add_header(egress_pkt.group2.ipv4); //group4 is created as dummy.
+    }
+    else if (egr_cmd_bus.encap_tunnel & egr_cmd_bus.encap_tunnel_type == 1) {
+        ipv6_header_construction();
+        add_header(egress_pkt.group2.ipv6); //group4 is created as dummy.
+    }
+
+    //L3 Routing Packet Modification
+    if (egr_cmd_bus.l3_routable) {
+        if (ingress_pkt.group2.ipv4._PRESENT) {
+            if (egr_cmd_bus.dec_ttl) {
+                egr_obj_bus.ttl = ingress_pkt.group2.ipv4.ttl-1; //Pipe Model
+            } else {
+                egr_obj_bus.ttl = egr_obj_bus.new_ttl; //Uniform Model
+            }
+            replace_header_field(egress_pkt.group2.ipv4.ttl,egr_obj_bus.ttl);
+        } else if (ingress_pkt.group2.ipv6._PRESENT) {
+            if (egr_cmd_bus.dec_ttl) {
+                egr_obj_bus.ttl = ingress_pkt.group2.ipv6.hop_limit-1; //Pipe Model
+            } else {
+                egr_obj_bus.ttl = egr_obj_bus.new_ttl; //Uniform Model
+            }
+            replace_header_field(egress_pkt.group2.ipv6.hop_limit,egr_obj_bus.ttl);
+       }
+
+        replace_header_field(egress_pkt.group1.l2.macda, egr_field_bus.macda);
+        replace_header_field(egress_pkt.group1.l2.macsa, egr_field_bus.macsa);
+//        replace_header_field(egress_pkt.group1.l2.ethertype,ingress_pkt.group1.l2.ethertype);
+//        delete_header(ingress_pkt.group1.l2);
+//        add_header(egress_pkt.group1.l2); 
+    }
+
+    if (egr_cmd_bus.do_int_transit) {
+        // Assigning the actual information
+        if (ingress_pkt.group2.int_header.instruction_bitmap[0:0] == 1) {
+            egress_pkt.group2.int_switch_id_header.switch_id = 0x7FFFFFFF;
+            egress_pkt.group2.int_switch_id_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[1:1] == 1) {
+            egress_pkt.group2.int_port_id_header.ingress_port_id = egr_obj_bus.ing_port;
+            egress_pkt.group2.int_port_id_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[2:2] == 1) {
+            egress_pkt.group2.int_hop_latency_header.hop_latency = 0x7FFFFFFF;
+            egress_pkt.group2.int_hop_latency_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[3:3] == 1) {
+            egress_pkt.group2.int_q_occupancy_header.q_occupancy = 0x7FFFFFFF;
+            egress_pkt.group2.int_q_occupancy_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[4:4] == 1) {
+            egress_pkt.group2.int_ingress_tstamp_header.ingress_tstamp = egr_obj_bus.ingress_timestamp;
+            egress_pkt.group2.int_ingress_tstamp_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[5:5] == 1) {
+            egress_pkt.group2.int_egress_port_id_header.egress_port_id = egr_obj_bus.dst_port;
+            egress_pkt.group2.int_egress_port_id_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[6:6] == 1) {
+            egress_pkt.group2.int_q_congestion_header.q_congestion = 0x7FFFFFFF;
+            egress_pkt.group2.int_q_congestion_header.bos       = 0;
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[7:7] == 1) {
+            egress_pkt.group2.int_egress_port_tx_utilization_header.egress_port_tx_utilization= 0x7FFFFFFF;
+            egress_pkt.group2.int_egress_port_tx_utilization_header.bos       = 0;
+        }
+
+        // Assigning BoS
+        if (ingress_pkt.group2.int_header.instruction_bitmap[7:7] == 1) {
+            egress_pkt.group2.int_egress_port_tx_utilization_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[6:6] == 1) {
+            egress_pkt.group2.int_q_congestion_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[5:5] == 1) {
+            egress_pkt.group2.int_egress_port_id_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[4:4] == 1) {
+            egress_pkt.group2.int_ingress_tstamp_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[3:3] == 1) {
+            egress_pkt.group2.int_q_occupancy_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[2:2] == 1) {
+            egress_pkt.group2.int_hop_latency_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[1:1] == 1) {
+            egress_pkt.group2.int_port_id_header.bos = 1;
+        } else if (ingress_pkt.group2.int_header.instruction_bitmap[0:0] == 1) {
+            egress_pkt.group2.int_switch_id_header.bos = 1;
+        }
+
+
+        if (ingress_pkt.group2.int_header.instruction_bitmap[0:0] == 1) {
+           add_header(egress_pkt.group2.int_switch_id_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[1:1] == 1) {
+            add_header(egress_pkt.group2.int_port_id_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[2:2] == 1) {
+            add_header(egress_pkt.group2.int_hop_latency_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[3:3] == 1) {
+            add_header(egress_pkt.group2.int_q_occupancy_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[4:4] == 1) {
+            add_header(egress_pkt.group2.int_ingress_tstamp_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[5:5] == 1) {
+            add_header(egress_pkt.group2.int_egress_port_id_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[6:6] == 1) {
+            add_header(egress_pkt.group2.int_q_congestion_header);
+        }
+        if (ingress_pkt.group2.int_header.instruction_bitmap[7:7] == 1) {
+            add_header(egress_pkt.group2.int_egress_port_tx_utilization_header);
+        }
+    }
+}
+
+function do_packet_length_update() {
+
+    if (egress_pkt.group2.ipv4._PRESENT) {
+        update_packet_length(egress_pkt.group2.ipv4.v4_length, 1, 0);
+    }
+    if ((egr_cmd_bus.decap_tunnel == 0) && (egress_pkt.group4.ipv4._PRESENT)) {
+        update_packet_length(egress_pkt.group4.ipv4.v4_length, 1, 0);
+    }
+}
+
+function do_checksum_update() {
+
+    if (egress_pkt.group2.ipv4._PRESENT) {
+        create_checksum(egress_pkt.group2.ipv4.hdr_checksum, {egress_pkt.group2.ipv4.version, egress_pkt.group2.ipv4.hdr_len, egress_pkt.group2.ipv4.tos, egress_pkt.group2.ipv4.v4_length, egress_pkt.group2.ipv4.id, egress_pkt.group2.ipv4.flags, egress_pkt.group2.ipv4.frag_offset, egress_pkt.group2.ipv4.ttl, egress_pkt.group2.ipv4.protocol, egress_pkt.group2.ipv4.sip, egress_pkt.group2.ipv4.dip});
+    }
+    if ((egr_cmd_bus.decap_tunnel == 0) && (egress_pkt.group4.ipv4._PRESENT)) {
+        create_checksum(egress_pkt.group4.ipv4.hdr_checksum, {egress_pkt.group4.ipv4.version, egress_pkt.group4.ipv4.hdr_len, egress_pkt.group4.ipv4.tos, egress_pkt.group4.ipv4.v4_length, egress_pkt.group4.ipv4.id, egress_pkt.group4.ipv4.flags, egress_pkt.group4.ipv4.frag_offset, egress_pkt.group4.ipv4.ttl, egress_pkt.group4.ipv4.protocol, egress_pkt.group4.ipv4.sip, egress_pkt.group4.ipv4.dip});
+    }
+}
+
+/*************************************
+PROGRAM
+*************************************/
+
+program l3_app {
+
+    //In VI Component - Implement Iarb and drive these signals
+    iarb.usage_mode_create( 0,
+            control_id.otpid_enable,
+            control_id.ts_enable,
+            obj_bus.port_num,
+            obj_bus.port_type_cfg,
+            time_bus.currenttime
+            );
+    iarb.execute();
+
+    //Ingress
+    parse_begin(start);
+    port_table.lookup(0);
+    do_vid_assign();
+    do_tunnel_init();
+    if (ingress_pkt.group2.ipv4._PRESENT) { //tbd
+       ipv4_tunnel_table.lookup(0);
+    } else {
+       ipv6_tunnel_table.lookup(0);
+    }
+    vlan_table.lookup(0);
+    vlan_stg_table.lookup(0);
+    do_l3_uat();
+    my_station_table.lookup(0);
+
+    //do L3 Lookup if all enables are set and my station is a hit.
+    if (cmd_bus.my_stn_routing_enable && cmd_bus.port_l3_enable && cmd_bus.vlan_l3_enable && cmd_bus.do_l3_lookup & ingress_pkt.group2.ipv4._PRESENT) {
+        ipv4_key_select(); //select key
+        ipv4_host_table.lookup(0); //lookup table 
+    }
+    else if (cmd_bus.my_stn_routing_enable && cmd_bus.port_l3_enable && cmd_bus.vlan_l3_enable && cmd_bus.do_l3_lookup & ingress_pkt.group2.ipv6._PRESENT) {
+        ipv6_key_select(); //select key
+        ipv6_host_table.lookup(0); //lookup table 
+    } 
+    else if (cmd_bus.do_l2_lookup) {
+        l2_host_table.lookup(0);
+    }
+
+    select_fields_for_hashing();
+    rtag7_hash.usage_mode_create( 0,
+            obj_bus.ip_da[31:0],
+            obj_bus.ip_sa[31:0],
+            ingress_pkt.group2.tcp.src_port,
+            ingress_pkt.group2.tcp.dst_port,
+            ingress_pkt.group2.ipv4.protocol,
+            obj_bus.rtag7_hash
+            );
+    rtag7_hash.execute();
+
+    do_l3_forwarding();
+
+    if (cmd_bus.do_ecmp) {
+        ecmp_group_table.lookup(0);
+    }
+    update_nhi_for_ecmp();
+    if (cmd_bus.my_stn_routing_enable && cmd_bus.do_l3_lookup) {
+        ing_nhi_table.lookup(0);
+    }
+//    if (ingress_pkt.group1.l2.macda[40]) {
+    if (cmd_bus.mc_pkt) {
+        l2mc_table.lookup(0);
+    }
+    resolve_destination();
+    resolve_int_process();
+
+    mmu.usage_mode_create( 0,
+            ccbi.l2_pbm,
+            ccbi.l3_pbm,
+            ccbe.dst_port
+            );
+    mmu.execute();
+
+
+    //-----Egress---------//
+    assign_ing_to_egr_bus();
+    egr_nhi_table.lookup(0);
+    if (egr_cmd_bus.encap_tunnel_type == 0) {
+        egr_ipv4_tunnel_table.lookup(0);
+    } else {
+        egr_ipv6_tunnel_table.lookup(0);
+    }
+    egr_intf_table.lookup(0);
+    do_packet_modif();
+
+    do_packet_length_update(); //tbd check for v6 length
+    if (egr_cmd_bus.encap_tunnel_type == 0) {
+       do_checksum_update();
+    }
+
+
+    //In VI Component - Implement drop functionality in End of the Pipe 
+    edb.usage_mode_create( 0,
+            egr_aux_bus.drop_vector,
+            egr_obj_bus.dst_modid,
+            egr_obj_bus.dst_port
+            );
+    edb.execute();
+}
+

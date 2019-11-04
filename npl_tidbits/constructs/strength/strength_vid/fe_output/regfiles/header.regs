@@ -1,0 +1,269 @@
+$HEADER = {
+    group1_t => {
+        DESC =>  '',
+        FIELDS => {
+            l2 => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => l2_t,
+                MAXBIT => 111,
+                MINBIT => 0,
+                ORDER => 0,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 112,
+            },
+            llc => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => llc_t,
+                MAXBIT => 247,
+                MINBIT => 224,
+                ORDER => 3,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 24,
+            },
+            snap => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => snap_t,
+                MAXBIT => 223,
+                MINBIT => 160,
+                ORDER => 2,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 64,
+            },
+            snap_or_llc => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => snap_llc_t,
+                MAXBIT => 159,
+                MINBIT => 112,
+                ORDER => 1,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+            vlan_tag => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => vlan_t,
+                MAXBIT => 279,
+                MINBIT => 248,
+                ORDER => 4,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 32,
+            },
+        },
+        TYPE => GROUP,
+    },
+    ing_pkt_t => {
+        DESC =>  '',
+        FIELDS => {
+            group1 => {
+                DESC =>  '',
+                FORMAT_IN_FORMAT => group1_t,
+                MAXBIT => 279,
+                MINBIT => 0,
+                ORDER => 0,
+                SIZE => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 280,
+            },
+        },
+        TYPE => PACKET,
+    },
+    l2_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 112,
+                MINBIT => 112,
+                ORDER => 3,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            ethertype => {
+                DESC =>  '',
+                MAXBIT => 111,
+                MINBIT => 96,
+                ORDER => 2,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 16,
+            },
+            macda => {
+                DESC =>  '',
+                MAXBIT => 47,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+            macsa => {
+                DESC =>  '',
+                MAXBIT => 95,
+                MINBIT => 48,
+                ORDER => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+        },
+        TYPE => HEADER,
+    },
+    llc_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 24,
+                MINBIT => 24,
+                ORDER => 1,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            llc => {
+                DESC =>  '',
+                MAXBIT => 23,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 24,
+            },
+        },
+        TYPE => HEADER,
+    },
+    snap_llc_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 48,
+                MINBIT => 48,
+                ORDER => 1,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            snap_llc => {
+                DESC =>  '',
+                MAXBIT => 47,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+        },
+        TYPE => HEADER,
+    },
+    snap_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 64,
+                MINBIT => 64,
+                ORDER => 2,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            ethertype => {
+                DESC =>  '',
+                MAXBIT => 63,
+                MINBIT => 48,
+                ORDER => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 16,
+            },
+            oui => {
+                DESC =>  '',
+                MAXBIT => 47,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 48,
+            },
+        },
+        TYPE => HEADER,
+    },
+    vlan_t => {
+        DESC =>  '',
+        FIELDS => {
+            _PRESENT => {
+                DESC => <<'EOT'
+PRESENT metadata
+EOT
+,
+                MAXBIT => 32,
+                MINBIT => 32,
+                ORDER => 4,
+                TAG => metadata,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            cfi => {
+                DESC =>  '',
+                MAXBIT => 3,
+                MINBIT => 3,
+                ORDER => 1,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 1,
+            },
+            ethertype => {
+                DESC =>  '',
+                MAXBIT => 31,
+                MINBIT => 16,
+                ORDER => 3,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 16,
+            },
+            pcp => {
+                DESC =>  '',
+                MAXBIT => 2,
+                MINBIT => 0,
+                ORDER => 0,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 3,
+            },
+            vid => {
+                DESC =>  '',
+                MAXBIT => 15,
+                MINBIT => 4,
+                ORDER => 2,
+                TAG => data,
+                VAR_LEN => false,
+                WIDTH => 12,
+            },
+        },
+        TYPE => HEADER,
+    },
+};

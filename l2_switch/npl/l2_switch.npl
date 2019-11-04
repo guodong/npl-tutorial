@@ -1,0 +1,359 @@
+//This Program lists Simple L2 Switch Functionality
+#include "l2_bus.npl"
+#include "l2_parser.npl"
+#include "l2_sf_defines.npl"
+
+/********************
+TABLE SPECIFICATION
+********************/
+/********************
+PORT TABLE
+********************/
+logical_table port_table {
+
+    table_type : index;
+    minsize    : 128;
+    maxsize    : 128;
+
+    keys {
+        bit[PORT_NUM_WIDTH] port_num;
+    }
+
+    fields {
+        bit[1]  otag_enable;
+        bit[8]  src_modid;
+        bit[12] default_vid;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            port_num = obj_bus.port_num;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.otag_enable = otag_enable;
+            obj_bus.src_modid = src_modid;
+            obj_bus.port_vid = default_vid;
+        }
+    }
+}
+
+
+/********************
+VLAN TABLE
+********************/
+logical_table vlan_table {
+
+    table_type : index;
+    minsize    : 4096;
+    maxsize    : 4096;
+
+    keys {
+        bit[12] vid;
+    }
+
+    fields {
+        bit[128] vlan_membership_bitmap;
+        bit[5]   stg_ptr;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            vid = obj_bus.vid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.vlan_membership_bitmap = vlan_membership_bitmap;
+            obj_bus.stg_ptr = stg_ptr;
+        }
+    }
+}
+
+/********************
+VLAN STG TABLE
+********************/
+logical_table vlan_stg_table {
+
+    table_type : index;
+    minsize    : 32;
+    maxsize    : 32;
+
+    keys {
+        bit[5]  stg_ptr;
+    }
+
+    fields {
+        bit[2] stg_state;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            stg_ptr = obj_bus.stg_ptr;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            cmd_bus.stg_state = stg_state;
+        }
+    }
+}
+
+/********************
+L2 HOST 
+********************/
+logical_table l2_host_table {
+
+    table_type : hash;
+    minsize    : 8192;
+    maxsize    : 16384;
+
+    keys {
+        bit[48] macda;
+        bit[12] vid;
+    }
+
+    fields {
+        bit[8]              dst_modid;
+        bit[PORT_NUM_WIDTH] dst_port;
+        bit[MGID_WIDTH]     mgid;
+        bit                 mc_pkt;
+        bit                 change_pri;
+        bit [3]             new_pri;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            macda = ingress_pkt.group1.l2.macda;
+            vid   = obj_bus.vid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.dst_modid = dst_modid;
+            obj_bus.dst_port = dst_port;
+            obj_bus.mgid = mgid;
+            cmd_bus.mc_pkt = mc_pkt;
+            cmd_bus.change_pri = change_pri;
+            obj_bus.new_pri = new_pri;
+        }
+    }
+}
+
+/********************
+L2 MC HOST 
+********************/
+
+logical_table l2mc_table {
+
+    table_type : index;
+    minsize    : 2048;
+    maxsize    : 2048;
+
+    keys {
+        bit[MGID_WIDTH] mgid;
+    }
+
+    fields {
+        bit[PORT_BITMAP_WIDTH] l2mc_bitmap;
+    }
+
+    key_construct() {
+        if (_LOOKUP0 == 1) {
+            mgid  = obj_bus.mgid;
+        }
+    }
+
+    fields_assign() {
+        if (_LOOKUP0 == 1) {
+            obj_bus.l2mc_bitmap = l2mc_bitmap;
+        }
+    }
+}
+
+
+
+
+/***********************
+EGRESS TABLES
+***********************/
+
+/*************************************
+FUNCTION DECLARATION
+*************************************/
+
+/*************************************
+VID assignment
+ - Pick Packet VLAN
+ - In case of untag packet, pick VID from Port_Table
+*************************************/
+function do_vid_assign() {
+
+    if (ingress_pkt.group1.otag._PRESENT) {
+        obj_bus.vid = ingress_pkt.group1.otag.vid;
+    } else if (ingress_pkt.group1.itag._PRESENT) {
+        obj_bus.vid = ingress_pkt.group1.itag.vid;
+    } else {
+        obj_bus.vid = obj_bus.port_vid;
+    }
+}
+
+/*************************************
+POST PARSE, UAT STAGE
+ - Vlan Membership Check
+ - Spanning Tree State Check
+*************************************/
+function do_l2_uat() {
+
+    cmd_bus.do_l2_lookup = 0;
+    local.in_port_bitmap = 0;
+    local.temp_port_bitmap = 0;
+    aux_bus.drop_vector = 0;
+
+    //Membership check
+    local.in_port_bitmap = 1 << obj_bus.port_num;
+    local.temp_port_bitmap = obj_bus.vlan_membership_bitmap & local.in_port_bitmap;
+
+    //Header field validation
+     if (ingress_pkt.group1.l2._PRESENT) {
+        if (ingress_pkt.group1.l2.macda == MAC_ADDR_BCAST) {
+            cmd_bus.pkt_l2_da_bcast = 1;
+        }
+        if (ingress_pkt.group1.l2.macda[40:40] == 1) {
+            cmd_bus.pkt_l2_da_mcast = 1;
+        }
+    }
+
+    if (ingress_pkt.group1.otag._PRESENT) {
+        if (ingress_pkt.group1.otag.vid == 0) {
+            cmd_bus.pkt_dot1p = 1;
+        } else {
+            cmd_bus.pkt_dot1p = 0;
+        } 
+    } 
+
+
+    //Spanning tree check
+    if (cmd_bus.stg_state != 3 || local.temp_port_bitmap == 0) {
+        aux_bus.drop_vector[MEMBERSHIP_SPG_FAILED] = 1; //Membership check or spanning tree failed.
+    } else {
+        cmd_bus.do_l2_lookup = 1;
+    }
+}
+
+
+/*************************************
+Resolve Destination 
+ - Pick destination results from one of the table lookups
+*************************************/
+function resolve_destination() {
+
+    //By default on obj_bus dst_modid and dst_port are from the L2 table.
+    //However if L3 lookup was successful then pick it from nhi table.
+    if (cmd_bus.mc_pkt & cmd_bus.pkt_l2_da_mcast) {
+        ccbi.l2_pbm = obj_bus.l2mc_bitmap;
+    } else {
+        ccbi.l2_pbm = 1 << obj_bus.dst_port;
+    } 
+}
+
+
+
+/*************************************
+ASSIGN to EGR BUS 
+ - Notional Only for clarity of understanding. Need not do this.
+*************************************/
+function assign_ing_to_egr_bus() {
+
+    egr_obj_bus.new_pri         = obj_bus.new_pri; 
+    egr_cmd_bus.change_pri      = cmd_bus.change_pri;
+    egr_obj_bus.dst_modid       = obj_bus.dst_modid;
+    egr_obj_bus.dst_port        = ccbe.dst_port;
+    egr_obj_bus.ing_port        = obj_bus.port_num;
+    egr_obj_bus.ingress_timestamp = time_bus.currenttime;
+    egr_aux_bus.drop_vector     = aux_bus.drop_vector;
+
+}
+
+
+/*************************************
+PACKET MODIFICATION
+*************************************/
+function do_packet_modif() { //to be implemented on flex editor
+
+    egress_pkt.group1.l2 = ingress_pkt.group1.l2;
+    egress_pkt.group1.otag = ingress_pkt.group1.otag;
+
+    if (egress_pkt.group1.otag._PRESENT) {
+        if (egr_cmd_bus.change_pri) {
+            replace_header_field(egress_pkt.group1.otag.pcp, egr_obj_bus.new_pri);
+        }
+    }
+
+}
+
+
+function memory_init() {
+    ccbe.dst_port = 0;
+    ccbi.l3_pbm = 0;
+}
+
+
+/*************************************
+PROGRAM
+*************************************/
+program l2_switch {
+
+    memory_init();
+
+    //In VI Component - Implement Iarb and drive these signals
+    iarb.usage_mode_create( 0,
+            control_id.otpid_enable,
+            control_id.ts_enable,
+            obj_bus.port_num,
+            obj_bus.port_type_cfg,
+            time_bus.currenttime
+            );
+    iarb.execute();
+
+    //Ingress
+    parse_begin(start);
+    port_table.lookup(0);
+    do_vid_assign();
+    vlan_table.lookup(0);
+    vlan_stg_table.lookup(0);
+    do_l2_uat();
+
+    l2_host_table.lookup(0);
+
+    if (cmd_bus.mc_pkt) {
+        l2mc_table.lookup(0);
+    }
+    resolve_destination();
+
+    mmu.usage_mode_create( 0,
+            ccbi.l2_pbm,
+            ccbi.l3_pbm,
+            ccbe.dst_port
+            );
+    mmu.execute();
+
+
+    //-----Egress---------//
+    assign_ing_to_egr_bus();
+    do_packet_modif();
+
+    //In VI Component - Implement drop functionality in End of the Pipe 
+    edb.usage_mode_create( 0,
+            egr_aux_bus.drop_vector,
+            egr_obj_bus.dst_modid,
+            egr_obj_bus.dst_port
+            );
+    edb.execute();
+}
+

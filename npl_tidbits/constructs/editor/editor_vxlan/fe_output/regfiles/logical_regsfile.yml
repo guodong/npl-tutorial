@@ -1,0 +1,233 @@
+CHECKSUM:
+    create_checksum0:
+        ARGUMENT0:
+            egress_pkt.group2.ipv4.hdr_checksum:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 0
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 16
+        ARGUMENT1:
+            egress_pkt.group2.ipv4.dip:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 10
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 32
+            egress_pkt.group2.ipv4.flags:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 5
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 3
+            egress_pkt.group2.ipv4.frag_offset:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 6
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 13
+            egress_pkt.group2.ipv4.hdr_len:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 1
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 4
+            egress_pkt.group2.ipv4.id:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 4
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 16
+            egress_pkt.group2.ipv4.protocol:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 8
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 8
+            egress_pkt.group2.ipv4.sip:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 9
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 32
+            egress_pkt.group2.ipv4.tos:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 2
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 8
+            egress_pkt.group2.ipv4.ttl:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 7
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 8
+            egress_pkt.group2.ipv4.v4_length:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 3
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 16
+            egress_pkt.group2.ipv4.version:
+                GROUP_TYPE: group2_t
+                HEADER_TYPE: ipv4_t
+                ORDER: 0
+                PACKET_TYPE: egr_pkt_t
+                WIDTH: 4
+ENUM: {}
+FORMAT:
+    aux_bus_t:
+        DESC: ''
+        FIELDS:
+            drop_vector:
+                DESC: ''
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+    ccbe_t:
+        DESC: ''
+        FIELDS:
+            dst_port:
+                DESC: ''
+                MAXBIT: 6
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 7
+    ccbi_t:
+        DESC: ''
+        FIELDS:
+            l2_pbm:
+                DESC: ''
+                MAXBIT: 127
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 128
+            l3_pbm:
+                DESC: ''
+                MAXBIT: 255
+                MINBIT: 128
+                ORDER: 1
+                WIDTH: 128
+    control_id_t:
+        DESC: ''
+        FIELDS:
+            otpid_enable:
+                DESC: ''
+                MAXBIT: 3
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 4
+            ts_enable:
+                DESC: ''
+                MAXBIT: 4
+                MINBIT: 4
+                ORDER: 1
+                WIDTH: 1
+    egr_obj_bus_t:
+        DESC: ''
+        FIELDS:
+            dst_modid:
+                DESC: ''
+                MAXBIT: 7
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 8
+            dst_port:
+                DESC: ''
+                MAXBIT: 14
+                MINBIT: 8
+                ORDER: 1
+                WIDTH: 7
+            ing_port:
+                DESC: ''
+                MAXBIT: 21
+                MINBIT: 15
+                ORDER: 2
+                WIDTH: 7
+            ingress_timestamp:
+                DESC: ''
+                MAXBIT: 37
+                MINBIT: 22
+                ORDER: 3
+                WIDTH: 16
+    obj_bus_t:
+        DESC: ''
+        FIELDS:
+            dst_modid:
+                DESC: ''
+                MAXBIT: 16
+                MINBIT: 9
+                ORDER: 2
+                WIDTH: 8
+            dst_port:
+                DESC: ''
+                MAXBIT: 23
+                MINBIT: 17
+                ORDER: 3
+                WIDTH: 7
+            port_num:
+                DESC: ''
+                MAXBIT: 8
+                MINBIT: 2
+                ORDER: 1
+                WIDTH: 7
+            port_type_cfg:
+                DESC: ''
+                MAXBIT: 1
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 2
+    time_bus_t:
+        DESC: ''
+        FIELDS:
+            currenttime:
+                DESC: ''
+                MAXBIT: 15
+                MINBIT: 0
+                ORDER: 0
+                WIDTH: 16
+INSTANCE:
+    BUS:
+        ccbe: ccbe_t
+        ccbi: ccbi_t
+        control_id: control_id_t
+        egr_aux_bus: aux_bus_t
+        egr_obj_bus: egr_obj_bus_t
+        obj_bus: obj_bus_t
+        time_bus: time_bus_t
+    PACKET:
+        egress_pkt: egr_pkt_t
+        ingress_pkt: ing_pkt_t
+NCS_SIGNATURE:
+    CHIP_ID: ''
+    CHIP_REV: ''
+    IDENTIFIER: 24579610f0f8dff341d7910abac699e4
+    NCS_RUN_DATE_TIME: '2019-06-08 11:28:19.556558'
+    NCS_VERSION: 1.3.3rc4
+    NPL_APP: Default-App
+    NPL_APP_DESCRIPTION: Default Npl Application
+    NPL_APP_VERSION: '0.0'
+REGISTER: {}
+TABLE: {}
+UPDATE_PACKET_LENGTH:
+    update_packet_length0:
+        ARGUMENT0:
+            egress_pkt.group2.ipv4.v4_length:
+                WIDTH: 16
+        ARGUMENT1:
+            CONST:
+                WIDTH: 8
+        ARGUMENT2:
+            CONST:
+                WIDTH: 8
+    update_packet_length1:
+        ARGUMENT0:
+            egress_pkt.group2.udp.udp_length:
+                WIDTH: 16
+        ARGUMENT1:
+            CONST:
+                WIDTH: 8
+        ARGUMENT2:
+            CONST:
+                WIDTH: 8

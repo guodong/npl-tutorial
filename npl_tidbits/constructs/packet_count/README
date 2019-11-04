@@ -1,0 +1,56 @@
+
+Description:
+============
+This program illustrates how to use NPL's 'packet count' construct and provides sandbox for experimenting.
+
+'packet_count' program implements simple 'multicast packet counter'. The counter is incremented for every incoming packet with 40th bit set in destination mac-address.
+
+Contents:
+=========
+packet_count
+|-- npl
+|   |-- packet_count.npl  (main program code)
+|   |-- base_helper.npl   (support code that is needed for program to compile & execute)
+|-- config.ini            (configuration file that can be used as-is)
+|-- Makefile              
+|-- bm_tests              (Scripts to support topology, packet crafting, packet send & receive)
+    |-- corp_net
+    |   |-- testPkt.py
+    |-- sf_definition     (Special Function definition to interact with BMI* code)
+        |-- bm_sfc.cpp
+
+Compile & Run the program:
+==========================
+To compile 'packet_count' program, run following commands from program directory:
+   * make fe_nplsim
+   * make nplsim_comp
+At this point, all files needed to run NPL Behavior Model (BM) are generated.
+There are two options to run 'packet_count' program with NPL BM.
+   1. If xterm is supported, just run: 
+      *   make nplsim_run    (this is simple and easy way to run)
+   2. If xterm is NOT supported then:  (manually running BM components)
+      2a. Open two terminal windows and browse to 'packet_count' program directory.
+      2b. Terminal-1: Run 'packet_count' program's Behavior Model:
+          :> source ./ncsc-x.x.x/bin/setup.sh
+          cd <npl_example>  
+          :> ./fe_output/bmodel/bin/bmodel.sim
+      2c. Terminal-2: Run Behavior Model CLI program.
+          :> source ./ncsc-x.x.x/bin/setup.sh
+          cd <npl_example>  
+          :> python $BRCM_NCS_ROOT/ncsc-x.x.x/bmi/cli/bmif_cli.py --regfile ./fe_output/regfiles/nplsim_physical_regsfile.yml
+
+
+Packet Test:
+============
+Default packet generation script included with the program does following:
+   1. Input : Send a UC packet through port-0 of BM.
+
+   2. Input : Send a MC packet through port-0 of BM.
+      Output: BM window prints out packet_count() construct is called..
+
+To run the test, open terminal and browse to 'packet_count' program directory.
+Run the following packet generation script included with the program.
+   :> python bm_tests/corp_net/testPkt.py
+
+*BM  :- Behavior Model
+*BMI :- Behavior Model Infrastructure

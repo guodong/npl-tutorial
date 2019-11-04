@@ -1,0 +1,177 @@
+
+struct vntag_t {
+    fields {
+        bit[32]     tag;
+        bit[16]     ethertype;
+    }
+}
+
+struct etag_t {
+    fields {
+        bit[48]     tag;
+        bit[16]     ethertype;
+    }
+}
+
+struct snap_llc_t {
+    fields {
+        bit[48]     snap_llc;
+    }
+}
+
+struct snap_t {
+    fields {
+        bit[48]     oui;
+        bit[16]     ethertype;
+    }
+}
+
+struct llc_t {
+    fields {
+        bit[24]     llc;
+    }
+}
+
+struct vlan_t {
+    fields {
+        bit[3]      pcp;
+        bit[1]      cfi;
+        bit[12]     vid;
+        bit[16]     ethertype;
+    }
+}
+
+struct l2_t {
+    fields {
+        bit[48]     macda;
+        bit[48]     macsa;
+        bit[16]     ethertype;
+    }
+}
+
+struct ipv4_t {
+    fields {
+        bit[4]      version;
+        bit[4]      hdr_len;
+        bit[8]      tos;
+        bit[16]     v4_length;
+        bit[16]     id;
+        bit[3]      flags;
+        bit[13]     frag_offset;
+        bit[8]      ttl;
+        bit[8]      protocol;
+        bit[16]     hdr_checksum;
+        bit[32]     sip;
+        bit[32]     dip;
+        varbit[512] option;
+    }
+    header_length_exp  : hdr_len*4;
+}
+
+struct ipv6_t {
+    fields {
+        bit[4]      version;
+        bit[8]      tos;
+        bit[20]     flow_label;
+        bit[16]     v6_length;
+        bit[8]      next_header;
+        bit[8]      hop_limit;
+        bit[128]    sip;
+        bit[128]    dip;
+    }
+}
+
+struct tcp_t {
+    fields {
+        bit[16]     src_port;
+        bit[16]     dst_port;
+        bit[32]     sn;
+        bit[32]     ack;
+        bit[4]      hdr_len;
+        bit[3]      reserved;
+        bit[3]      flags_ecn;
+        bit[1]      flags_urg;
+        bit[1]      flags_ack;
+        bit[1]      flags_psh;
+        bit[1]      flags_rst;
+        bit[1]      flags_syn;
+        bit[1]      flags_fin;
+        bit[16]     win_size;
+        bit[16]     checksum;
+        bit[16]     urgent_ptr;
+    }
+}
+
+struct udp_t {
+    fields {
+        bit[16]     src_port;
+        bit[16]     dst_port;
+        bit[16]     udp_length;
+        bit[16]     checksum;
+    }
+}
+
+struct int_header_t {
+     fields {
+        bit [2] ver;
+        bit [2] rep;
+        bit c;
+        bit e;
+        bit [2] reserved1;
+        bit [8] ins_cnt;
+        bit [8] max_hop_count;
+        bit [8] total_hop_count;
+        bit [16] instruction_bitmap;
+        bit [16] reserved2;
+    }
+}
+
+struct int_switch_id_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] switch_id ;
+    }
+}
+struct int_ingress_port_id_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] ingress_port_id ;
+    }
+}
+struct int_hop_latency_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] hop_latency ;
+    }
+}
+struct int_q_occupancy_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] q_occupancy ;
+    }
+}
+struct int_ingress_tstamp_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] ingress_tstamp ;
+    }
+}
+struct int_egress_port_id_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] egress_port_id ;
+    }
+}
+struct int_q_congestion_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] q_congestion ;
+    }
+}
+struct int_egress_port_tx_utilization_header_t {
+    fields {
+        bit[1] bos ;
+        bit[31] egress_port_tx_utilization ;
+    }
+}
+
